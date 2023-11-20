@@ -9,19 +9,19 @@ async def gen_Image_api(prompt, negative, gen_width, gen_height):
     # APIのエンドポイント
     url = "http://127.0.0.1:7860"
 
-    # 生成設定ファイルのパス
-    t2iconfig_path = os.path.dirname(__file__) + "\\t2i_config.json"
+    # 生成設定ファイルconfig.jsonのパス
+    t2iconfig_path = os.path.dirname(__file__) + "/config.json"
 
-    # JSONファイルから設定を読み込み
+    # config.jsonファイルから生成設定を読み込み
     with open(t2iconfig_path, "r") as file:
         config = json.load(file)
 
-    # ペイロードを作成する
-    payload = config.copy()  # configの内容をコピー
+    # sdwebuiに生成させるためのデータ､ペイロードを作成する
+    payload = config.copy()  # config.jsonの内容をコピー
     payload["prompt"] = prompt  # promptを上書き
     payload["negative_prompt"] = negative  # negative_promptを上書き
 
-    # 渡されたgen_width幅とgen_heightが0,0の場合、JSON指定のデフォルト値
+    # gen_widthとgen_heightが0,0の場合、config.json指定のデフォルト値に設定
     if gen_width != 0:
         payload["width"] = gen_width  # 幅を上書き
     if gen_height != 0:
