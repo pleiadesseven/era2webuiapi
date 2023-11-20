@@ -1,0 +1,7 @@
+config.jsonの設定項目の説明
+※以下、設定キー横の()内は初期値
+
+APIモードで起動時にsdwebuiに送られるパラメーター
+https://github.com/mix1009/sdwebuiapi
+
+
