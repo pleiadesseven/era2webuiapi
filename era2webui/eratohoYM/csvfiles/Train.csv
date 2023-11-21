@@ -3,7 +3,7 @@
 0,愛撫,,,,,,,,,,,povのfingeringが出せない。プロンプト欄が空の場合、上半身だけ映す汎用調教になる(event.csvで記述)
 1,クンニ,"nsfw,(close-up of girl's crotch:0.9),(pussy),spread legs,naked,botomless","(penis),(self fingering:1.5),(musterbation:1.5),(hand on pussy:1.5)",,1,1,1,1,1,,,無理
 2,アナル愛撫,"nsfw,Posture of girl on all fours with buttocks protruding,from behind,((ass focus)),botomless",(penis),,1,1,1,1,1,,,
-3,胸愛撫,"nsfw,hetero,breast grab, 1boy, 1girl arms at side,hands,arms,bust shot,nipples,POVBREASTGRAB,POV HANDS,BREAST GRAB,<lora:povBreastGrab_v2:0.8:CT>","male's face,female masturbation,self grabbing",,1,1,1,0,0,,,
+3,胸愛撫,"nsfw,hetero,breast grab, 1boy, 1girl arms at side,hands,arms,bust shot,nipples,POVBREASTGRAB,POV HANDS,BREAST GRAB,<lora:povBreastGrab_v2:0.8:1:lbw=CT>","male's face,female masturbation,self grabbing",,1,1,1,0,0,,,
 4,指挿入れ,,,,1,1,1,0,0,,,
 5,フェラする,,,,1,1,1,0,0,,,
 6,キスする,"(((kiss pov))),blash,{|open mouth,tongue},half closed eyes,((close up lips)),saliva","(penis,pov crotch,navel:1.4)",%正方形%,1,1,0,0,0,%汎用拒否%,%汎用拒否ネガ%,男のPOV下腹部が出たがる
@@ -32,11 +32,11 @@
 28,背面立位,"(standing sex :1.2),vaginal sex, ass,from behind,doggystyle,penis in pussy,breasts, nsfw, hetero, navel, nipples, penis, pussy,  sex",,,1,1,1,1,1,,,とりえあえず後背位にstanding sexを追加
 ;--------------------------------------------------,,,,,,,,,,,,
 ;アナルセックス系コマンド(30～39),,,,,,,,,,,,
-30,正常位アナル,"<lora:missionaryPOVAnal_v10:0.6:0,0,0,0,0,0,1,1,0.6,1,0,0,0,0,0,0,0>,missionary POV Anal,lying,pov,nsfw ,anal sex,navel, camel Toe,pussy,missionary anal",,,1,1,1,1,1,,,アナルはLoraでないと難しい
+30,正常位アナル,"<lora:missionaryPOVAnal_v10:1:lbw=0.6:0,0,0,0,0,0,1,1,0.6,1,0,0,0,0,0,0,0>,missionary POV Anal,lying,pov,nsfw ,anal sex,navel, camel Toe,pussy,missionary anal",,,1,1,1,1,1,,,アナルはLoraでないと難しい
 31,後背位アナル,"sfw, girl, 1boy, pov,( penis:1.2), ass, from behind, (back:1.1),<lora:povAnalFromBehind_v2:0.7>,from above",,%縦長%,1,1,1,1,1,,,
-32,対面座位アナル,"<lora:missionaryPOVAnal_v10:0.6:0,0,0,0,0,0,1,1,0.6,1,0,0,0,0,0,0,0>,missionary POV Anal,lying,pov,nsfw ,anal sex,navel, camel Toe,pussy,missionary anal",,,1,1,1,1,1,,,暫定で正常位
+32,対面座位アナル,"<lora:missionaryPOVAnal_v10:1:lbw=0.6:0,0,0,0,0,0,1,1,0.6,1,0,0,0,0,0,0,0>,missionary POV Anal,lying,pov,nsfw ,anal sex,navel, camel Toe,pussy,missionary anal",,,1,1,1,1,1,,,暫定で正常位
 33,背面座位アナル,"sfw, girl, 1boy, pov,( penis:1.2), ass, from behind, (back:1.1),<lora:povAnalFromBehind_v2:0.7>,from above",,,1,1,1,1,1,,,暫定で後背位
-34,騎乗位アナル,"<lora:missionaryPOVAnal_v10:0.6:0,0,0,0,0,0,1,1,0.6,1,0,0,0,0,0,0,0>,missionary POV Anal,lying,pov,nsfw ,anal sex,navel, camel Toe,pussy,missionary anal",,,1,1,1,1,0,%汎用拒否%,%汎用拒否ネガ%,暫定で正常位
+34,騎乗位アナル,"<lora:missionaryPOVAnal_v10:1:lbw=0.6:0,0,0,0,0,0,1,1,0.6,1,0,0,0,0,0,0,0>,missionary POV Anal,lying,pov,nsfw ,anal sex,navel, camel Toe,pussy,missionary anal",,,1,1,1,1,0,%汎用拒否%,%汎用拒否ネガ%,暫定で正常位
 35,逆アナルレイプ,,,,1,1,1,0,0,,,
 36,助手のＡを犯す,,,,1,1,1,0,0,,,
 37,対面立位アナル,,,,1,1,1,1,1,,,
@@ -46,20 +46,20 @@
 40,手淫,"nsfw,hetero,hand job ,(hand on penis)",multiple penis,,1,1,1,0,0,%汎用拒否%,%汎用拒否ネガ%,
 41,フェラチオ,"nsfw,(fellatio,penis) ,pov crotch ,blow job,{|face focus|wide shot},{|side view},{|all fours},{|looking up}",multiple penis,"%縦長%,%正方形%,%横長%",1,1,0,0,0,%汎用拒否%,%汎用拒否ネガ%,
 42,パイズリ,"nsfw,1girl, 1boy,titsjob,(paizuri),penis on breasts,nipples,pov,pov crotch ,<lora:realisticTitfuck_titfuckRealisticEpoch:1>,titfuck","multiple nipples,multiple penis,pussy,wide shot",%正方形%,1,1,1,0,0,%汎用拒否%,%汎用拒否ネガ%,
-43,素股,"nsfw,botomless,navel,nude,<lora:povImminentPenetration_ipv1:1:CT>,1girl,1boy,  (pov crotch,penis), (imminent penetration:1.3), spread legs.(Cowgirl)","penis in pussy,inseration,(futanari,futa)",,1,1,1,0,0,%汎用拒否%,%汎用拒否ネガ%,騎乗素股が見つかるまで妥協
-44,アナル舐め強制,"nsfw,Girl facing sideways,side views,upper body,(nude male,1boy,ass:1.3), (licking anus:1.4),<lora:conceptFemdomFellatio_v10:1:NC>,anilingus,1girl,faceless male","penis,male's face",%正方形%,1,1,1,0,0,%汎用拒否%,%汎用拒否ネガ%,
+43,素股,"nsfw,botomless,navel,nude,<lora:povImminentPenetration_ipv1:1:1:lbw=CT>,1girl,1boy,  (pov crotch,penis), (imminent penetration:1.3), spread legs.(Cowgirl)","penis in pussy,inseration,(futanari,futa)",,1,1,1,0,0,%汎用拒否%,%汎用拒否ネガ%,騎乗素股が見つかるまで妥協
+44,アナル舐め強制,"nsfw,Girl facing sideways,side views,upper body,(nude male,1boy,ass:1.3), (licking anus:1.4),<lora:conceptFemdomFellatio_v10:1:1:lbw=NC>,anilingus,1girl,faceless male","penis,male's face",%正方形%,1,1,1,0,0,%汎用拒否%,%汎用拒否ネガ%,
 45,アナルおねだり,"nsfw,A girl grabs her own ass with both hands and thrusts it at me,botomless,pussy,hand,self grabbing ass",,,1,1,1,1,1,%汎用拒否%,%汎用拒否ネガ%,
 46,足舐め強制,"1boy and 1girl,naked girl kneels at the man's feet and kisses his feet,all fours,tongue,(licking someone's foot,Five toes:1.4)",,,1,1,1,0,0,%汎用拒否%,%汎用拒否ネガ%,稀に惜しいのが出る
 47,足扱き,"(FOOT JOB),1girl,1boy, penis,(FOOTJOB_POSITIONV2:0.5)","vaginal sex,inseration",,1,1,1,0,0,%汎用拒否%,%汎用拒否ネガ%,FOOTJOB_POSITIONV2はTI　タイツが出たり、足だけ違う人っぽくなりがち
 48,髪扱き,"nsfw,1girl, 1boy, (hairjob:1.4),(penis on hair:1.3), solo focus, upper body, arms behind back, (grabbing another's hair:1.2), hand on another's head, <lora:hairjob_v10:1>","(2boys,multipul penis),(fellatio)",%正方形%,1,1,1,0,0,%汎用拒否%,%汎用拒否ネガ%,
-49,腋扱き,"nsfw, <lora:testarmpitsex2:0.8:CT>,upper body,armpitsex,faceless male's lower body behind girl,(penis)",(multiple penis),,1,1,1,0,0,%汎用拒否%,%汎用拒否ネガ%,
+49,腋扱き,"nsfw, <lora:testarmpitsex2:0.8:1:lbw=CT>,upper body,armpitsex,faceless male's lower body behind girl,(penis)",(multiple penis),,1,1,1,0,0,%汎用拒否%,%汎用拒否ネガ%,
 50,全身扱き,,,,1,1,1,0,0,%汎用拒否%,%汎用拒否ネガ%,
-51,尻扱き,"nsfw,(all fours,facing away,ass,penis),pov,(from behind),1girl,1boy,<lora:qqq-buttjob-v2:0.8:NC>,buttjob","vaginal sex,inseration",,1,1,1,0,0,%汎用拒否%,%汎用拒否ネガ%,
+51,尻扱き,"nsfw,(all fours,facing away,ass,penis),pov,(from behind),1girl,1boy,<lora:qqq-buttjob-v2:0.8:1:lbw=NC>,buttjob","vaginal sex,inseration",,1,1,1,0,0,%汎用拒否%,%汎用拒否ネガ%,
 52,竿扱き,,,,1,1,1,0,0,%汎用拒否%,%汎用拒否ネガ%,
 53,玉揉み強制,,,,1,1,1,0,0,%汎用拒否%,%汎用拒否ネガ%,
 54,玉舐め強制,,,,1,1,1,0,0,%汎用拒否%,%汎用拒否ネガ%,
 55,アナル愛撫強制,,,,1,1,1,0,0,%汎用拒否%,%汎用拒否ネガ%,
-56,ナイズリ,"nsfw,(NAIZURI),1girl, 1boy, pov,(penis:1.2), flat chest,looking at viewer, from above,<lora:naizuriConcept_v1:0.8:CT>",,%正方形%,1,1,1,0,0,%汎用拒否%,%汎用拒否ネガ%,
+56,ナイズリ,"nsfw,(NAIZURI),1girl, 1boy, pov,(penis:1.2), flat chest,looking at viewer, from above,<lora:naizuriConcept_v1:0.8:1:lbw=CT>",,%正方形%,1,1,1,0,0,%汎用拒否%,%汎用拒否ネガ%,
 ;--------------------------------------------------,,,,,,,,,,,,
 ;薬品系コマンド(60～79),,,,,,,,,,,,
 60,ローション,,,,1,1,1,0,0,,,
@@ -108,7 +108,7 @@
 112,剃毛,,,,1,1,1,0,0,,,
 113,毛抜き,,,,1,1,1,0,0,,,
 114,毛を抜かせる,,,,1,1,1,0,0,,,
-115,自慰見せつけ,"pov, (male masturbation:1.2),(pov hand), 1boy, 1girl, kneeling, arms at side,from above, <lora:povMaleMasturbation_v2:0.9:0,0,0,0,0,0,0.5,1,1,0.5,0,0,0,0,0,0,0>",fellatio,%縦長%,1,1,1,0,0,,,
+115,自慰見せつけ,"pov, (male masturbation:1.2),(pov hand), 1boy, 1girl, kneeling, arms at side,from above, <lora:povMaleMasturbation_v2:0.9:1:lbw=0,0,0,0,0,0,0.5,1,1,0.5,0,0,0,0,0,0,0>",fellatio,%縦長%,1,1,1,0,0,,,
 116,二人自慰見せつけ,,,,1,1,1,0,0,,,
 117,秘貝開帳見せつけ,,,,1,1,1,0,0,,,
 118,二人秘貝見せつけ,,,,1,1,1,0,0,,,
@@ -151,7 +151,7 @@
 ;Ａ系拡張コマンド(170～189),,,,,1,1,1,0,0,,,
 170,ローターＡ挿入,,,,1,1,1,0,0,,,
 171,アナル電極,,,,1,1,1,0,0,,,
-172,アナルビーズ,"<lora:analBeads_v10:0.7:0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0>1girl all fours,(anarubizu:1.4), (sex toy), looking back, uncensored, no panties, from behind",,%横長%,1,1,1,0,0,,,装備としては安定しないのでつけ外し時に描写。
+172,アナルビーズ,"<lora:analBeads_v10:0.7:1:lbw=0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0>1girl all fours,(anarubizu:1.4), (sex toy), looking back, uncensored, no panties, from behind",,%横長%,1,1,1,0,0,,,装備としては安定しないのでつけ外し時に描写。
 173,拡張バルーン,,,,1,1,1,0,0,,,
 174,浣腸プレイ,,,,1,1,1,0,0,,,
 175,空気浣腸,,,,1,1,1,0,0,,,
@@ -196,7 +196,7 @@
 227,罵倒,"1girl,(gesturing no),(~:-\(:1.2),frown,(bust shot:1.1),(slit almond eyes:1.2)","fellatio,hand job",,1,1,1,0,0,,,
 228,鼻フック,,,,1,1,1,0,0,,,
 229,強制開口器,,,,1,1,1,0,0,,,
-230,イラマチオ,"nsfw,(fellatio ,blow job,penis),<lora:testHeadgrabOr_v10:0.7:ct>,(hgrb),1boy, (head grab:1.4) , hand on another's head,(sanpaku:1.3),surprised,tears,(motion lines:1.2)","multiple penis,(tongue:1.4),chin","%正方形%,%横長%",1,1,0,0,0,%汎用拒否%,%汎用拒否ネガ%,
+230,イラマチオ,"nsfw,(fellatio ,blow job,penis),<lora:testHeadgrabOr_v10:0.7:1:lbw=CT>,(hgrb),1boy, (head grab:1.4) , hand on another's head,(sanpaku:1.3),surprised,tears,(motion lines:1.2)","multiple penis,(tongue:1.4),chin","%正方形%,%横長%",1,1,0,0,0,%汎用拒否%,%汎用拒否ネガ%,
 231,フィストファック,,,,1,1,1,0,0,,,
 232,アナルフィスト,,,,1,1,1,0,0,,,
 233,両穴フィスト,,,,1,1,1,0,0,,,
@@ -254,7 +254,7 @@
 324,後背位させる,,,,1,1,1,0,0,,,
 325,騎乗位する,,,,1,1,1,0,0,,,
 326,ペニバン挿入,,,,1,1,1,0,0,,,
-327,指チュパ,"pov,from above,upperbody,finger in another's mouth,(finger sucking),:o,(pov hand),<lora:murkysFingerSucking_1:0.7:CT>","pov crotch,pov legs,penis",,1,1,1,0,0,%汎用拒否%,%汎用拒否ネガ%,
+327,指チュパ,"pov,from above,upperbody,finger in another's mouth,(finger sucking),:o,(pov hand),<lora:murkysFingerSucking_1:0.7:1:lbw=CT>","pov crotch,pov legs,penis",,1,1,1,0,0,%汎用拒否%,%汎用拒否ネガ%,
 328,首筋耳裏責め,"pov,from behind,1girl,(looking back),face focus,(bust shot),(nape:1.4),(close up:1.2),shoulder","(lower body:1.4),(lower back,ass,buttocks,butt,thigh:1.4",,1,1,1,0,0,,,
 329,玉愛撫,,,,1,1,1,0,0,,,
 330,玉を舐める,,,,1,1,1,0,0,,,
@@ -457,7 +457,7 @@
 611,岩清水,,,,1,1,1,0,0,,,
 612,乱れ牡丹,,,,1,1,1,0,0,,,
 613,騎乗乳房自慰,,,,1,1,1,0,0,,,
-614,挿入Ｇスポ責め,"<lora:povWaistGrabConcept_v09:0.3:CT>,navel,pussy,(missionGrab,vaginal sex,missionaly,pov)",,%縦長%,1,1,1,0,0,,,対面からの派生で呼ばれる
+614,挿入Ｇスポ責め,"<lora:povWaistGrabConcept_v09:0.3:1:lbw=CT>,navel,pussy,(missionGrab,vaginal sex,missionaly,pov)",,%縦長%,1,1,1,0,0,,,対面からの派生で呼ばれる
 615,挿入子宮口責め,"<lora:fuckedSillyFromBehind_v10:0.8>,(fucked silly, sex from behind, 1boy)",,%横長%,1,1,1,0,0,,,背面からの派生で呼ばれる
 616,後背位愛撫,"nsfw,hetero,small breasts,breast grab, 1boy, 1girl arms at side penetrated from behind,(middle-aged man behind girl),hands,arms,bust shot,<lora:breastGrabFromBehind_nikeBreastGrabFrom:0.5>,doggystyle sex,","males face,female masturbation,self grabbing",,1,1,1,0,0,,,表示されるテキストは「後背位胸愛撫」である
 617,対面愛撫,,,,1,1,1,0,0,,,
