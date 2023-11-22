@@ -211,7 +211,7 @@ def Expression(order,flags):
                         prompt += "ahegao,{open mouth|:o},drooling,saliva,"
                     #絶頂強度12～14 だいぶアヘ顔
                     elif ahe_strength <= 14:
-                        prompt += "<lora:ahegao_v1:0.8:F>,ahegao,open mouth,drooling,saliva,"
+                        prompt += "<lora:ahegao_v1:0.8:1:lbw=F>,ahegao,open mouth,drooling,saliva,"
                     #絶頂強度14～16 かなりアヘ顔 
                     elif ahe_strength <= 16:
                     #確率でheadback 20%
@@ -221,10 +221,10 @@ def Expression(order,flags):
                             prompt += "<lora:conceptHeadbackArched_v10:1:CT>,(HEADBACK) "
                             ClosedEyes = True
                         else:
-                            prompt += "<lora:ahegao_v1:1.5:F>,(ahegao),open mouth,drooling,saliva,"
+                            prompt += "<lora:ahegao_v1:1.5:1:lbw=F>,(ahegao),open mouth,drooling,saliva,"
                     #絶頂強度17超え 完全にアヘ顔 
                     else:
-                        prompt += "<lora:ahegao_v1:1.6:F>,(ahegao:1.5),open mouth,(drooling),saliva,"
+                        prompt += "<lora:ahegao_v1:1.6:1:lbw=F>,(ahegao:1.5),open mouth,(drooling),saliva,"
 
                 # 羞恥の判定-----------------------------------------------------------------
 
