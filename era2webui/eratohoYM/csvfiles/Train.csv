@@ -32,10 +32,10 @@
 28,背面立位,"(standing sex :1.2),vaginal sex, ass,from behind,doggystyle,penis in pussy,breasts, nsfw, hetero, navel, nipples, penis, pussy,  sex",,,1,1,1,1,1,,,とりえあえず後背位にstanding sexを追加
 ;--------------------------------------------------,,,,,,,,,,,,
 ;アナルセックス系コマンド(30～39),,,,,,,,,,,,
-30,正常位アナル,"<lora:missionaryPOVAnal_v10:1:lbw=0.6:0,0,0,0,0,0,1,1,0.6,1,0,0,0,0,0,0,0>,missionary POV Anal,lying,pov,nsfw ,anal sex,navel, camel Toe,pussy,missionary anal",,,1,1,1,1,1,,,アナルはLoraでないと難しい
-31,後背位アナル,"sfw, girl, 1boy, pov,( penis:1.2), ass, from behind, (back:1.1),<lora:povAnalFromBehind_v2:0.7>,from above",,%縦長%,1,1,1,1,1,,,
+30,正常位アナル,"<lora:missionaryPOVAnal_v10:1:1:lbw=0.6:0,0,0,0,0,0,1,1,0.6,1,0,0,0,0,0,0,0>,missionary POV Anal,lying,pov,nsfw ,anal sex,navel, camel Toe,pussy,missionary anal",,,1,1,1,1,1,,,アナルはLoraでないと難しい
+31,後背位アナル,"sfw, girl, 1boy, pov,( penis:1.2), ass, from behind, (back:1.1),<lora:povAnalFromBehind_v2:0.5>,from above",,%縦長%,1,1,1,1,1,,,
 32,対面座位アナル,"<lora:missionaryPOVAnal_v10:1:lbw=0.6:0,0,0,0,0,0,1,1,0.6,1,0,0,0,0,0,0,0>,missionary POV Anal,lying,pov,nsfw ,anal sex,navel, camel Toe,pussy,missionary anal",,,1,1,1,1,1,,,暫定で正常位
-33,背面座位アナル,"sfw, girl, 1boy, pov,( penis:1.2), ass, from behind, (back:1.1),<lora:povAnalFromBehind_v2:0.7>,from above",,,1,1,1,1,1,,,暫定で後背位
+33,背面座位アナル,"sfw, girl, 1boy, pov,( penis:1.2), ass, from behind, (back:1.1),<lora:povAnalFromBehind_v2:0.5>,from above",,,1,1,1,1,1,,,暫定で後背位
 34,騎乗位アナル,"<lora:missionaryPOVAnal_v10:1:lbw=0.6:0,0,0,0,0,0,1,1,0.6,1,0,0,0,0,0,0,0>,missionary POV Anal,lying,pov,nsfw ,anal sex,navel, camel Toe,pussy,missionary anal",,,1,1,1,1,0,%汎用拒否%,%汎用拒否ネガ%,暫定で正常位
 35,逆アナルレイプ,,,,1,1,1,0,0,,,
 36,助手のＡを犯す,,,,1,1,1,0,0,,,
