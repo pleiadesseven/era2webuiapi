@@ -9,8 +9,8 @@ from sub import gen_Image
 from api import gen_Image_api
 import configparser
 from tkinter import filedialog
-# from eratohoYM.suberatohoYM import promptmaker
-from eraImascgpro.subcgpro import promptmaker
+from eratohoYM.suberatohoYM import promptmaker #YMの場合こちらをインポートする
+#from eraImascgpro.subcgpro import promptmaker
 from selenium import webdriver
 import sys
 
@@ -45,8 +45,7 @@ class FileHandler(FileSystemEventHandler):
             if len(self.queue) >= QUEUE_MAX_SIZE:
                 self.queue.pop(0)
             self.queue.append((event.src_path, content))
-
-
+@profile
 def TaskExecutor(queue,driver):
     while True:
         if len(queue) > 0:
@@ -86,7 +85,7 @@ def TaskExecutor(queue,driver):
                 if driver is None:
                     status_code = asyncio.run(gen_Image_api(prompt, negative, gen_width, gen_height))
                     if status_code == 200:
-                        time.sleep(1)
+                        time.sleep(0.1)
                         break #待機ゲージはapi.pyで処理する
                 
                 else:
@@ -112,7 +111,7 @@ if __name__ == '__main__':
 
     # iniファイル読み込み
     config_ini = configparser.ConfigParser()
-    inipath = os.path.dirname(__file__) + "\config.ini"
+    inipath = os.path.abspath(os.path.join(os.path.dirname(__file__), "config.ini"))
     config_ini.read(inipath, 'UTF-8')
 
     # iniに項目がなかったら追加する
@@ -206,26 +205,31 @@ if __name__ == '__main__':
                 return e
 
 
-    # ブラウザが取得できなかった場合はAPIで動作 
-    print("Chromeへの接続を試行")
-    if not apiモードで起動する:
+    # APIモードで起動するかの設定をconfig.iniから取得
+    api_mode = config_ini.get('Generater', 'apiモードで起動する', fallback='0') == '1'
+
+    # iniでAPIモードの設定がある場合はブラウザのチェックを飛ばす
+    if not api_mode:
+        print("Chromeへの接続を試行")
         driver = check_browser()
     else:
+        print("APIモードで起動")
         driver = None
-    
+
+    # ブラウザモードでの接続が成功したか、APIモードの処理
     if driver is not None:
         print("ブラウザモードで作動")
         print("取得したwebdriver:" + str(driver))
     else:
-        print("Chromeへの接続失敗。apiの試行")
+        print("APIの接続確認中")
         api_result = check_api()
         if api_result is True:
             print("API利用可能")
-            driver = None
         else:
             print(f"APIの接続不能")
             print("ブラウザ､APIともに使用不能")
             sys.exit()
+
         
 
     # ファイル監視の開始

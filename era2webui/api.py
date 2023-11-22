@@ -45,7 +45,7 @@ async def gen_Image_api(prompt, negative, gen_width, gen_height):
     
     
     #生成と待機ゲージの表示を並列実行
-    async with httpx.AsyncClient(timeout=30) as client:
+    async with httpx.AsyncClient(timeout=100) as client:
         
         gen_task = asyncio.create_task(gen_image(client))
         _ = asyncio.create_task(update_progress_bar(client))
