@@ -18,7 +18,7 @@ def gen_Image(driver,prompt,negative,gen_width,gen_height):
     titlechk=driver.title
 
     if titlechk != "Stable Diffusion":
-         return False 
+        return False
     
     print("title OK")
 
