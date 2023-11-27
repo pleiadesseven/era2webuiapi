@@ -20,6 +20,13 @@ eraで遊ぶとプレイ内容をリアルタイムで画像生成する仕組�
 2. -remote-debugging-port=9222オプションをつけてchromeを起動し、WebUIを開いておく。（バッチファイル同梱）
 3. era2webui.pyを実行する。（バッチファイル同梱）
 
+### LCM使用による高速化
+1. add promptを起動してlcm lora プロンプトを有効化
+2. 生成パラメーターをlcm用に設定する
+ - Sampling method : DPM++ 2S a Karras
+ - CFG Scale : 2.5~3
+ - Step 6～8
+3. hiresfix使用時は hiresfix step 0
 
 ### カスタマイズについて
 詳しくは別記

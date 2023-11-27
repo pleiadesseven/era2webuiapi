@@ -10,6 +10,7 @@ from api import gen_Image_api
 import configparser
 from tkinter import filedialog
 from eratohoYM.suberatohoYM import promptmaker #YMの場合こちらをインポートする
+#from eraTW.suberaTW import promptmaker #TWの場合こちらをインポートする
 #from eraImascgpro.subcgpro import promptmaker
 from selenium import webdriver
 import sys
@@ -45,7 +46,7 @@ class FileHandler(FileSystemEventHandler):
             if len(self.queue) >= QUEUE_MAX_SIZE:
                 self.queue.pop(0)
             self.queue.append((event.src_path, content))
-@profile
+
 def TaskExecutor(queue,driver):
     while True:
         if len(queue) > 0:

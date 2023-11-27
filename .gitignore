@@ -2,3 +2,11 @@ era2webui/__pycache__/
 era2webui/chromeuserdata/
 era2webui/eratohoYM/__pycache__/
 era2webui/eraImascgpro/__pycache__/
+era2webui/eraTW/__pycache__
+venv/
+era2webui/config.ini
+.vscode/settings.json
+era2webui/add_prompt.txt
+gituser.bat
+era2webui/era2webui.py.lprof
+作業補助スクリプト/ym_characters.csv

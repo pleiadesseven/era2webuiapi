@@ -44,9 +44,9 @@
 1042,早苗,"Kochiya Sanae,green hair",,,
 1043,神奈子,"(Yasaka Kanako:1.2),purple hair,%高身長%",,,名前で8割正解までいくが違和感あり
 1044,諏訪子,"(Moriya Suwako:1.2),suwako,touhou,blonde hair,brown hat with eyeballs",,,だいぶわかってる感は出してくるものの惜しい感じで安定しない
-1045,サニー,"Sunny Milk,light brown hair,fairy wings",,,三月精は諦め
+1045,サニー,"<lora:sunny milk:1>sunny milk,light brown hair,fairy wings",,,三月精は諦め
 1046,ルナ,"Luna Child,blonde hair,fairy wings",,,
-1047,スター,"Star Sapphire,black hair,fairy wings,blue ribbon",,,
+1047,スター,"<lora:star:0.75>,Star Sapphire,black hair,fairy wings,blue ribbon",,,
 1048,阿求,"Hieda no Akyuu,(Akyuu),green Kimono,yellow sleeves,purple hair,white flower on hair,",,,袖の色さえ合えば阿求と言い張れるんだけど
 1049,蓮子,"Usami Renko,black hair,hat",,,
 1050,メリー,"Maribel Hearn,blonde hair,hat",,,
