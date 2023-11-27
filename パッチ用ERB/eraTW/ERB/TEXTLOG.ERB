@@ -2,8 +2,8 @@
 ;調教中のパラメータをテキスト出力
 ;JSON形式
 ;時刻,キャラ名,素質,好感度,刻印,行為,絶頂,PALAM増減,PALAM累積値,ほかいろんなフラグ
-;GLOBAL:3000 連続呼び出し防止用のタイマー
-;GLOBAL:3001 出力テキストにつく連番
+;GLOBAL:8800 連続呼び出し防止用のタイマー
+;GLOBAL:8801 出力テキストにつく連番
 ;引数
 ;ARGS どの場面から呼ばれたかを表す文字列 。"scene"要素としてそのまま文字列出力
 ;ARG 描画キャラの番号 省略したらTARGET
@@ -31,17 +31,17 @@ IF ARGS == "TACHIE"
 		SCENE = ターゲット切替
 ;		PRINTFORML %CALLNAME:target%を選択した
 		WAIT
-		FLAG:880 = 0
-	ELSEIF FLAG:880 == 2
+		FLAG:8800 = 0
+	ELSEIF FLAG:8800 == 2
 		SCENE = マスター移動
 ;		PRINTFORML 移動直後です
 		WAIT
 		FLAG:8800 = 0
-			ELSEIF FLAG:880 == 3
+			ELSEIF FLAG:8800 == 3
 		SCENE = 真名看破
 		PRINTFORML 真名看破
 		WAIT
-		FLAG:880 = 0
+		FLAG:8800 = 0
 	ELSE
 		;予約なしで呼ばれたらキャンセル
 		RETURN 0
@@ -366,9 +366,9 @@ SAVETEXT LOCALS, GLOBAL:8800, 0, 1
 TARGET = LOCAL:3
 
 ;出力テキストの連番は0～4でループさせる
-GLOBAL:8800 = GLOBAL:8800 + 1
-SIF GLOBAL:8800 == 5
-	GLOBAL:8800 = 0
+GLOBAL:8801 = GLOBAL:8801 + 1
+SIF GLOBAL:8801 == 5
+	GLOBAL:8801 = 0
 	
 PRINTFORML {SELECTCOM}
 ;-------------------------------------------------------------------------------
@@ -381,4 +381,3 @@ PRINTFORML {SELECTCOM}
 	ELSEIF ARGS == "真名看破"
 		FLAG:8800 = 3	
 	ENDIF
-	

@@ -325,7 +325,7 @@ ELSEIF RESULT >= 831 && RESULT <= 843
 ELSEIF RESULT >=1001 && RESULT < (CHARANUM + 1000) && CFLAG:(RESULT - 1000):同室
 	;立ち絵種類切り替え
 	SIF RESULT - 1000 == TARGET
-		FLAG:立ち絵種類 = !FLAG:立ち絵種類		
+		FLAG:立ち絵種類 = !FLAG:立ち絵種類
 	TFLAG:104 = (RESULT - 1000)
 	CALL SET_TACHIE_FLAG("ターゲット切替")
 ;ストーキング対象切り替え
@@ -680,3 +680,4 @@ IF !RESULT
 	CFLAG:ARG:身体測定 = 2
 	RESTART
 ENDIF
+
