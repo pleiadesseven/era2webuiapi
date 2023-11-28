@@ -403,9 +403,9 @@ def get_location(order):
     csvfile_path= os.path.join(os.path.dirname(__file__), 'csvfiles\\Location.csv')
     csv_loc = pd.read_csv(filepath_or_buffer=csvfile_path)
     
-    prompt += get_df(csv_loc,"地名",order["現在位置"],"プロンプト")
+    prompt += get_df(csv_loc,"場所ID",order["現在位置"],"プロンプト")
     prompt += ","
-    negative += get_df(csv_loc,"地名",order["現在位置"],"ネガティブ")
+    negative += get_df(csv_loc,"場所ID",order["現在位置"],"ネガティブ")
     negative += ","
 
     return prompt, negative
