@@ -46,10 +46,6 @@ IF ARGS == "TACHIE"
 		;予約なしで呼ばれたらキャンセル
 		RETURN 0
 	ENDIF
-ELSE
-;引数TACHIE以外では名前未確定キャラの描画はしない
-	SIF CFLAG:95 == 0
-		RETURN 0
 ENDIF
 
 ;調教メニューお断り
@@ -124,9 +120,10 @@ REPEAT 60
 	LOCALS = %LOCALS%"%ABLNAME:(LOCAL)%":{ABL:TARGET:LOCAL},
 	LOCAL += 1
 REND
-;1文字消す
+;末尾のカンマを消す
 LOCALS = %SUBSTRING(LOCALS,0,STRLENS(LOCALS)-1)%
 LOCALS = %LOCALS%\},
+
 
 ;刻印-----------------------------------------------------------------------------------
 LOCALS = %LOCALS%"mark":\{
@@ -137,7 +134,7 @@ REPEAT 8
 	LOCALS = %LOCALS%"%MARKNAME:(LOCAL)%":{MARK:TARGET:LOCAL},
 	LOCAL += 1
 REND
-;1文字消す
+;末尾のカンマを消す
 LOCALS = %SUBSTRING(LOCALS,0,STRLENS(LOCALS)-1)%
 LOCALS = %LOCALS%\},
 
@@ -156,7 +153,7 @@ REPEAT 33
 	LOCAL:1 = UP:LOCAL - DOWN:LOCAL
 	LOCALS = %LOCALS%"%PALAMNAME:LOCAL%":{LOCAL:1},
 REND
-;1文字消す
+;末尾のカンマを消す
 LOCALS = %SUBSTRING(LOCALS,0,STRLENS(LOCALS)-1)%
 LOCALS = %LOCALS%\},
 
@@ -169,15 +166,53 @@ REPEAT 33
 	LOCAL:2 = PALAM:LOCAL + UP:LOCAL
 	LOCALS = %LOCALS%"%PALAMNAME:LOCAL%":{LOCAL:2},
 REND
-;1文字消す
+;末尾のカンマを消す
 LOCALS = %SUBSTRING(LOCALS,0,STRLENS(LOCALS)-1)%
 LOCALS = %LOCALS%\},
 
 
+;EQUIP------------------------------------------------------------------
+;値が1以上のものすべてについて、変数の番号をそのまま書き出す。
+LOCALS = %LOCALS%"equip":\{
+LOCAL:2 = 0
+REPEAT 25
+	LOCAL = COUNT
+		SIF EQUIP:LOCAL < 1
+		CONTINUE
+	LOCALS = %LOCALS%"{LOCAL}":"{EQUIP:LOCAL}",
+	LOCAL:2 += 1
+REND
+
+;末尾のカンマを消す
+SIF LOCAL:2 >= 1
+	LOCALS = %SUBSTRING(LOCALS,0,STRLENS(LOCALS)-1)%
+LOCALS = %LOCALS%\},
+
+
+;EQUIP_NAME
+FOR LOCAL, 12001, 12025
+    STR:LOCAL = 
+NEXT
+
+CALL SHOW_CLOTHES(NO,"現在の衣装",)
+
+LOCALS = %LOCALS%"EQUIPNAME":\{
+LOCAL:2 = 0
+FOR LOCAL, 12001, 12025
+    SIF STRLENS(STR:LOCAL) > 0 
+		LOCALS = %LOCALS%"{LOCAL - 12000}":" %STR:LOCAL%",
+		LOCAL:2 += 1
+NEXT
+
+; 余分なカンマを削除
+SIF LOCAL:2 >= 1
+    LOCALS = %SUBSTRING(LOCALS,0,STRLENS(LOCALS)-1)%
+LOCALS = %LOCALS%\},
+
 
 ;TEQUIP------------------------------------------------------------------
 ;値が1以上のものすべてについて、変数の番号をそのまま書き出す。
-LOCALS = %LOCALS%"equip":\{
+LOCALS = %LOCALS%"tequip":\{
 LOCAL:2 = 0
 REPEAT 25
 	LOCAL = COUNT
@@ -187,7 +222,7 @@ REPEAT 25
 	LOCAL:2 += 1
 REND
 
-;1文字消す
+;末尾のカンマを消す
 SIF LOCAL:2 >= 1
 	LOCALS = %SUBSTRING(LOCALS,0,STRLENS(LOCALS)-1)%
 LOCALS = %LOCALS%\},
@@ -239,7 +274,7 @@ LOCALS = %LOCALS%"浮気バレ":{CFLAG:40},
 LOCALS = %LOCALS%"オナバレ":{CFLAG:41},
 LOCALS = %LOCALS%"夜這い":{CFLAG:42},
 LOCALS = %LOCALS%"ノーパン":{CFLAG:291},
-LOCALS = %LOCALS%"現在位置":%STR:12000%,
+LOCALS = %LOCALS%"現在位置":"%STR:12000%",
 LOCALS = %LOCALS%"睡眠":{CFLAG:313},
 
 LOCALS = %LOCALS%"うふふ":{CFLAG:317},
@@ -331,25 +366,25 @@ LOCALS = %LOCALS%"噴乳":{NOWEX:10},
 LOCALS = %LOCALS%"放尿":{NOWEX:12},
 LOCALS = %LOCALS%"MASTER射精量":{NOWEX:MASTER:射精},
 
-LOCALS = %LOCALS%"下半身下着１":{EQUIP:5},
-LOCALS = %LOCALS%"下半身下着２":{EQUIP:6},
-LOCALS = %LOCALS%"スカート":{EQUIP:スカート},
-LOCALS = %LOCALS%"上半身下着１":{EQUIP:7},
-LOCALS = %LOCALS%"上半身下着２":{EQUIP:9},
-LOCALS = %LOCALS%"下半身上着１":{EQUIP:12},
+LOCALS = %LOCALS%"下半身下着１":{EQUIP:下半身下着１},
+LOCALS = %LOCALS%"下半身下着２":{EQUIP:下半身下着２},
+LOCALS = %LOCALS%"下半身上着１":{EQUIP:下半身上着},
 ;eraTWで無い変数なので常に0を出力する
 LOCALS = %LOCALS%"下半身上着２":0,
-LOCALS = %LOCALS%"上半身上着１":{EQUIP:17},
-LOCALS = %LOCALS%"上半身上着２":{EQUIP:16},
+LOCALS = %LOCALS%"スカート":{EQUIP:スカート},
+LOCALS = %LOCALS%"上半身下着１":{EQUIP:上半身下着１},
+LOCALS = %LOCALS%"上半身下着２":{EQUIP:上半身下着２},
+LOCALS = %LOCALS%"上半身上着１":{EQUIP:上半身上着１},
+LOCALS = %LOCALS%"上半身上着２":{EQUIP:上半身上着２},
 LOCALS = %LOCALS%"ボディースーツ":{EQUIP:ボディースーツ},
 LOCALS = %LOCALS%"ワンピース":{EQUIP:ワンピース},
 LOCALS = %LOCALS%"着物":{EQUIP:着物},
 LOCALS = %LOCALS%"レオタード":{EQUIP:レオタード},
 
-LOCALS = %LOCALS%"下半身着衣状況":{TEQUIP:0},
 LOCALS = %LOCALS%"上半身着衣状況":{TEQUIP:1},
-LOCALS = %LOCALS%"下半身ずらし状態":{TEQUIP:2},
 LOCALS = %LOCALS%"上半身はだけ状態":{TEQUIP:3},
+LOCALS = %LOCALS%"下半身着衣状況":{TEQUIP:0},
+LOCALS = %LOCALS%"下半身ずらし状態":{TEQUIP:2},
 
 LOCALS = %LOCALS%"マスターがＶ挿入":{MASTER_POSE(6,1)},
 LOCALS = %LOCALS%"マスターがＡ挿入":{MASTER_POSE(7,1)},
