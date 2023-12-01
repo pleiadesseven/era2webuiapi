@@ -9,6 +9,12 @@ import tkinter as tk
 from tkinter import filedialog
 import configparser
 from selenium.webdriver.common.by import By
+import glob
+import csv
+from modulefinder import ModuleFinder
+from pathlib import Path
+import re
+import csv
 
 
 # ブラウザ操作用 webdriver、ポジ、ネガを引数に取ってgenerate
@@ -91,22 +97,22 @@ def gen_Image(driver,prompt,negative,gen_width,gen_height):
 # 例 : get_df(csv_tra,"コマンド名","何もしない","プロンプト") で何もしない時のプロンプトを返す
 # csvの該当箇所が空欄の時は""を返す
 # 検索条件がおかしい場合は"Error"を返す
-def get_df(dataframe,key, value, column):
+def get_df(csvname, dataframe, key, value, column):
     try:
         result = dataframe.loc[dataframe[key] == value, column].fillna("").values[0]
     except Exception as e:
         print("Error: {}".format(e))
-        print("取り出そうとした要素: {}={}なる行の{}".format(key,value,column))
+        print("取り出そうとした要素:{}内の{}={}なる行の{}".format(csvname,key,value,column))
         return "Error"
     return result
 
 # csv読み出し用 検索条件が2列で構成される場合
-def get_df_2key(dataframe,key,value,subkey,subvalue,column):
+def get_df_2key(csvname, dataframe, key, value, subkey, subvalue, column):
     try:
         result = dataframe.loc[(dataframe[key] == value) & (dataframe[subkey] == subvalue), column].fillna("").values[0]
     except Exception as e:
         print("Error: {}".format(e))
-        print("取り出そうとした要素: {}={}かつ{}={}なる行の{}".format(key,value,subkey,subvalue,column))
+        print("取り出そうとした要素: {}内の{}={}かつ{}={}なる行の{}".format(csvname,key,value,subkey,subvalue,column))
         return "Error"
     return result
 
@@ -185,3 +191,59 @@ def get_width_and_height(kaizoudo,Replacelist):
         return 0,0
     
     return width,height
+
+
+def generate_csvlist():
+    # sub.pyが存在するディレクトリのパスを取得
+    base_dir = os.path.dirname(__file__)
+
+    # era2webui.pyのパスを構築
+    era2webui_path = os.path.join(base_dir, 'era2webui.py')
+
+    # era2webui.pyを読み込んでインポート文を検索
+    with open(era2webui_path, 'r', encoding='utf-8') as file:
+        content = file.read()
+
+    # コメントアウトされていないインポート文を検索
+    match = re.search(r'^from (eratohoYM|eraTW|eraImascgpro)', content, re.MULTILINE)
+
+    if match:
+        # 一致したモジュール名を取得
+        imported_module = match.group(1)
+        print(f"対応するeraバリアント: {imported_module}")
+
+        # モジュール名を含むディレクトリへのパスを組み立てる
+        variantdir = os.path.join(os.path.dirname(__file__), imported_module)
+        csvdir = os.path.join(variantdir, 'csvfiles')
+
+        # 指定ディレクトリ内の全てのCSVファイルのパスを取得
+        csv_files = glob.glob(os.path.join(csvdir, '*.csv'))
+
+        # CSVファイルの名前とアドレスをCSVファイルに保存
+        csv_list_path = os.path.join(variantdir, 'csv_list.csv')
+        with open(csv_list_path, 'w', newline='', encoding='utf-8') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(["name", "path"])
+            for file in csv_files:
+                file_name = os.path.basename(file)
+                writer.writerow([file_name, file])
+
+        print(f"{imported_module}のCSVファイルのリストを '{csv_list_path}' に保存したぜ。")
+        return csv_list_path
+    else:
+        print("バリアントを選んでfromのコメントアウトを解除してください")
+        return None
+
+# グローバル変数としてcsvlistを定義
+csvlist = generate_csvlist()
+
+
+#csvlistup関数でリストアップしたcsvlistをファイル名をキーに検索Pathを返す
+def promp_csv_path(csvlist, promptcsv):
+    # CSVファイルリストを読み込む
+    with open(csvlist, mode='r', encoding='utf-8') as csvfile:
+        reader = csv.reader(csvfile)
+        for row in reader:
+            if row[0].lower() == promptcsv.lower():  # 大文字小文字を区別しない比較
+                return row[0], row[1]  # ファイル名とパスを返す
+    return print (f"{promptcsv}のPathが見つからないぜ") # ファイルが見つからない場合

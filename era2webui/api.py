@@ -41,7 +41,7 @@ async def gen_Image_api(prompt, negative, gen_width, gen_height):
             progress = await client.get(url=f'{url}/sdapi/v1/progress?skip_current_image=false')
             progressjson = progress.json()
             progress_bar.update(int((progressjson['progress'] * 100) - progress_bar.n))
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.3)
     
     
     #生成と待機ゲージの表示を並列実行
@@ -63,7 +63,7 @@ async def gen_Image_api(prompt, negative, gen_width, gen_height):
             print(f"幅：{payload['width']}")
             print(f"高さ：{payload['height']}")
 
-            await asyncio.sleep(0.5) #ここでちょっと待たないとimageviewer.pyエラー落ちないが表示はされる
+            await asyncio.sleep(0.1) #ここでちょっと待たないとimageviewer.pyエラー落ちないが表示はされる
             return results.status_code
         
         else:

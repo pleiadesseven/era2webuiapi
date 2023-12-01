@@ -7,6 +7,8 @@ from sub import get_df
 from sub import get_df_2key
 from sub import get_width_and_height
 from sub import chikan
+from sub import promp_csv_path
+from sub import csvlist
 
 # order自体を変化させる前処理
 # たとえば
@@ -55,14 +57,14 @@ def promptmaker(order):
     flags = {"drawchara":0,"drawface":0,"drawbreasts":0,"drawvagina":0,"drawanus":0}
 
     # Effect.csvとEvent.csvを読みこんでおく
-    csvfile_path= os.path.join(os.path.dirname(__file__), 'csvfiles\\Effect.csv')
+    csvname, csvfile_path= promp_csv_path(csvlist, 'Effect.csv')
     csv_efc = pd.read_csv(filepath_or_buffer=csvfile_path)
 
-    csvfile_path= os.path.join(os.path.dirname(__file__), 'csvfiles\\Event.csv')
+    csvname, csvfile_path= promp_csv_path(csvlist, 'Event.csv')
     csv_eve = pd.read_csv(filepath_or_buffer=csvfile_path)
 
-    prompt += get_df(csv_efc,'名称','基礎プロンプト','プロンプト') + ","
-    negative += get_df(csv_efc,'名称','基礎プロンプト','ネガティブ')  + ","
+    prompt += get_df(csvname, csv_efc,'名称','基礎プロンプト','プロンプト') + ","
+    negative += get_df(csvname, csv_efc,'名称','基礎プロンプト','ネガティブ')  + ","
 
     #シーン分岐
 
@@ -87,39 +89,39 @@ def promptmaker(order):
     #ここからTRAIN コマンド実行時の絵
     if order["scene"] == "TRAIN":
         #コマンドの処理 Train.csvを読む
-        csvfile_path= os.path.join(os.path.dirname(__file__), 'csvfiles\\Train.csv')
+        csvname, csvfile_path= promp_csv_path(csvlist, 'Train.csv')
         csv_tra = pd.read_csv(filepath_or_buffer=csvfile_path)
 
         # TRAINNAME関数はないと思い込んでいたので番号で処理している
         comNo = str(order["コマンド"])
 
         # 体位から読み取ったキャラ描画、顔描画、胸描画のフラグ（0か1が入る)
-        flags["drawchara"] =  get_df(csv_tra,"コマンド番号",comNo,"キャラ描画")
-        flags["drawface"] =  get_df(csv_tra,"コマンド番号",comNo,"顔描画")
-        flags["drawbreasts"] =  get_df(csv_tra,"コマンド番号",comNo,"胸描画")
-        flags["drawvagina"] = get_df(csv_tra,"コマンド番号",comNo,"ヴァギナ描画")
-        flags["drawanus"] = get_df(csv_tra,"コマンド番号",comNo,"アナル描画")
+        flags["drawchara"] =  get_df(csvname, csv_tra,"コマンド番号",comNo,"キャラ描画")
+        flags["drawface"] =  get_df(csvname, csv_tra,"コマンド番号",comNo,"顔描画")
+        flags["drawbreasts"] =  get_df(csvname, csv_tra,"コマンド番号",comNo,"胸描画")
+        flags["drawvagina"] = get_df(csvname, csv_tra,"コマンド番号",comNo,"ヴァギナ描画")
+        flags["drawanus"] = get_df(csvname, csv_tra,"コマンド番号",comNo,"アナル描画")
         
         # コマンドが未記入の場合はEvent.csvの汎用調教を呼ぶ
-        pro = get_df(csv_tra,"コマンド番号",comNo,"プロンプト")
+        pro = get_df(csvname, csv_tra,"コマンド番号",comNo,"プロンプト")
         if pro == "":
-            prompt += get_df(csv_eve,"名称","汎用調教","プロンプト")
+            prompt += get_df(csvname, csv_eve,"名称","汎用調教","プロンプト")
             prompt += ","
-            negative += get_df(csv_eve,"名称","汎用調教","ネガティブ")  
+            negative += get_df(csvname, csv_eve,"名称","汎用調教","ネガティブ")  
             negative += ","
 
-            flags["drawchara"] = get_df(csv_eve,"名称","汎用調教","キャラ描画")
-            flags["drawface"] = get_df(csv_eve,"名称","汎用調教","顔描画")
-            flags["drawbreasts"] = get_df(csv_eve,"名称","汎用調教","胸描画")
-            flags["drawvagina"] = get_df(csv_eve,"名称","汎用調教","ヴァギナ描画")
-            flags["drawanus"] = get_df(csv_eve,"名称","汎用調教","アナル描画")
+            flags["drawchara"] = get_df(csvname, csv_eve,"名称","汎用調教","キャラ描画")
+            flags["drawface"] = get_df(csvname, csv_eve,"名称","汎用調教","顔描画")
+            flags["drawbreasts"] = get_df(csvname, csv_eve,"名称","汎用調教","胸描画")
+            flags["drawvagina"] = get_df(csvname, csv_eve,"名称","汎用調教","ヴァギナ描画")
+            flags["drawanus"] = get_df(csvname, csv_eve,"名称","汎用調教","アナル描画")
 
         else:
             # cgpro コマンド成否で分岐はめんどいので実装しない
             # 現状だとソース変動があるときにしか画像表示関数は呼ばれない
             order["success"] = 1 # 必ず成功
 
-            deny = get_df(csv_tra,"コマンド番号",comNo,"拒否プロンプト")
+            deny = get_df(csvname, csv_tra,"コマンド番号",comNo,"拒否プロンプト")
             if deny == "":
                 #拒否プロンプトが空なら成否判定なしと判断、通常プロンプトを出力する
                 chk_success = True
@@ -133,12 +135,12 @@ def promptmaker(order):
             if chk_success:
                 prompt += pro
                 prompt += ","
-                negative += get_df(csv_tra,"コマンド番号",comNo,"ネガティブ")
+                negative += get_df(csvname, csv_tra,"コマンド番号",comNo,"ネガティブ")
                 negative += ","
             else:
                 prompt += deny
                 prompt += ","
-                negative += get_df(csv_tra,"コマンド番号",comNo,"拒否ネガティブ")
+                negative += get_df(csvname, csv_tra,"コマンド番号",comNo,"拒否ネガティブ")
                 negative += ","
 
         # 付着した精液
@@ -169,28 +171,28 @@ def promptmaker(order):
         negative += n
 
         # キャラ描写で毎回記述するプロンプト Effect.csvから読み出す
-        prompt += get_df(csv_efc,"名称","人物プロンプト","プロンプト") + ","
+        prompt += get_df(csvname, csv_efc,"名称","人物プロンプト","プロンプト") + ","
 
         # Character.csvとAdd_character.csvを結合
-        csvfile_path= os.path.join(os.path.dirname(__file__), 'csvfiles\\Character.csv')
+        csvname, csvfile_path= promp_csv_path(csvlist, 'Character.csv')
         csv_cha = pd.read_csv(filepath_or_buffer=csvfile_path)
-        csvfile_path= os.path.join(os.path.dirname(__file__), 'csvfiles\\Add_Character.csv')
+        csvname, csvfile_path= promp_csv_path(csvlist, 'Add_Character.csv')
         add_cha = pd.read_csv(filepath_or_buffer=csvfile_path)
 
         csv_cha = pd.concat([csv_cha,add_cha])
 
         # 特別な名前でプロンプトを登録してある場合、キャラ描写を強制的に上書きする処理
-        uwagaki = get_df(csv_cha,"キャラ名","描画キャラ上書き","プロンプト")
+        uwagaki = get_df(csvname, csv_cha,"キャラ名","描画キャラ上書き","プロンプト")
         if uwagaki != "": #空欄じゃなかったら上書き
             prompt += "\(" + uwagaki + "\),"
             negative += get_df(csv_cha,"キャラ名","描画キャラ上書き","ネガティブ") + ","
         else:
             #割り込みがなければ通常のキャラプロンプト読み込み処理
             chaName = order["target"]
-            prompt += "\(" + get_df(csv_cha,"キャラ名",chaName,"プロンプト") + ":" + str(get_df(csv_cha,"キャラ名",chaName,"プロンプト強調")) + "\),"
-            prompt += "\(" + get_df(csv_cha,"キャラ名",chaName,"プロンプト2") + "\),"
-            prompt += get_df(csv_cha,"キャラ名",chaName,"キャラLora") + ","
-            negative += get_df(csv_cha,"キャラ名",chaName,"ネガティブ") +  ","
+            prompt += "\(" + get_df(csvname, csv_cha,"キャラ名",chaName,"プロンプト") + ":" + str(get_df(csvname, csv_cha,"キャラ名",chaName,"プロンプト強調")) + "\),"
+            prompt += "\(" + get_df(csvname, csv_cha,"キャラ名",chaName,"プロンプト2") + "\),"
+            prompt += get_df(csvname, csv_cha,"キャラ名",chaName,"キャラLora") + ","
+            negative += get_df(csvname, csv_cha,"キャラ名",chaName,"ネガティブ") +  ","
 
 
 
@@ -212,22 +214,22 @@ def promptmaker(order):
                     prompt += "(dripping pussy juice),"
                 # 破瓜の血       
                 # if order["処女喪失"] > 0:
-                    # prompt += get_df(csv_efc,"名称","処女喪失","プロンプト") + ","
+                    # prompt += get_df(csvname, csv_efc,"名称","処女喪失","プロンプト") + ","
                 # if order["今回の調教で処女喪失"] > 0:
-                    # prompt += get_df(csv_efc,"名称","今回の調教で処女喪失","プロンプト") + ","            
+                    # prompt += get_df(csvname, csv_efc,"名称","今回の調教で処女喪失","プロンプト") + ","            
                 if order["放尿"] > 0:
-                        prompt += get_df(csv_efc,"名称","放尿","プロンプト") + ","
+                        prompt += get_df(csvname, csv_efc,"名称","放尿","プロンプト") + ","
             if flags["drawbreasts"]:
                 if order["噴乳"] > 0:
-                    prompt += get_df(csv_efc,"名称","噴乳","プロンプト") + ","
+                    prompt += get_df(csvname, csv_efc,"名称","噴乳","プロンプト") + ","
             # ここまでTRAIN限定のエフェクト
         
         if "妊娠" in order["talent"]:
             # 標準で20日で出産する。残14日から描写し、残8日でさらに進行
             if (order["出産日"] - order["日付"]) in range(8,14):
-                prompt += get_df(csv_efc,"名称","妊娠中期","プロンプト") + ","
+                prompt += get_df(csvname, csv_efc,"名称","妊娠中期","プロンプト") + ","
             elif (order["出産日"] - order["日付"]) <= 8:
-                prompt += get_df(csv_efc,"名称","妊娠後期","プロンプト") + ","
+                prompt += get_df(csvname, csv_efc,"名称","妊娠後期","プロンプト") + ","
 
         #乳サイズ、体型の関数を呼び出す
         p,n = body_shape(order,flags)
@@ -244,7 +246,7 @@ def promptmaker(order):
         # negative += n        
 
         #目の色をorderに追記しておく(Expression関数でclosed eyesの判定をした後に反映する)
-        order["eyecolor"] = get_df(csv_cha,"キャラ名",order["target"],"目の色")
+        order["eyecolor"] = get_df(csvname, csv_cha,"キャラ名",order["target"],"目の色")
 
         #表情ブレンダー
         p,n = Expression(order,flags)
@@ -299,7 +301,7 @@ def promptmaker(order):
 def body_shape (order,flags):
     prompt = ""
     negative = ""
-    csvfile_path= os.path.join(os.path.dirname(__file__), 'csvfiles\\Talent.csv')
+    csvname, csvfile_path= promp_csv_path(csvlist, 'Talent.csv')
     csv_tal = pd.read_csv(filepath_or_buffer=csvfile_path)
 
 
@@ -333,7 +335,7 @@ def body_shape (order,flags):
 
 # 髪色
 # def haircolor(order):
-#     csvfile_path= os.path.join(os.path.dirname(__file__), 'csvfiles\\Talent.csv')
+#     csvname, csvfile_path= promp_csv_path(csvlist, 'Talent.csv')
 #     csv_tal = pd.read_csv(filepath_or_buffer=csvfile_path)
 #     prompt = ""
 #     negative = ""
@@ -348,7 +350,7 @@ def body_shape (order,flags):
 
 # 髪型 
 def hairstyle(order):
-    csvfile_path= os.path.join(os.path.dirname(__file__), 'csvfiles\\Talent.csv')
+    csvname, csvfile_path= promp_csv_path(csvlist, 'Talent.csv')
     csv_tal = pd.read_csv(filepath_or_buffer=csvfile_path)
     prompt = ""
     negative = ""
@@ -364,7 +366,7 @@ def hairstyle(order):
 def equipment(order,flags):
     prompt = ""
     negative = ""
-    csvfile_path= os.path.join(os.path.dirname(__file__), 'csvfiles\\Equip.csv')
+    csvname, csvfile_path= promp_csv_path(csvlist, 'Equip.csv')
     csv_equ = pd.read_csv(filepath_or_buffer=csvfile_path)
 
     N膣装備 = ["11","12","13","22"]
@@ -383,10 +385,10 @@ def equipment(order,flags):
             if flags["drawanus"] == 0:
                 continue
         
-        equ = get_df_2key(csv_equ,"TEQUIP",int(key),"値",int(value),"プロンプト")
+        equ = get_df_2key(csvname, csv_equ,"TEQUIP",int(key),"値",int(value),"プロンプト")
         if  equ != "ERROR":
             prompt += equ + ","
-        equ = get_df_2key(csv_equ,"TEQUIP",int(key),"値",int(value),"ネガティブ")
+        equ = get_df_2key(csvname, csv_equ,"TEQUIP",int(key),"値",int(value),"ネガティブ")
         if  equ != "ERROR":
             negative += equ + ","
         
@@ -400,12 +402,12 @@ def get_location(order):
     negative = ""
 
     # 700箇所
-    csvfile_path= os.path.join(os.path.dirname(__file__), 'csvfiles\\Location.csv')
+    csvname, csvfile_path= promp_csv_path(csvlist, 'Location.csv')
     csv_loc = pd.read_csv(filepath_or_buffer=csvfile_path)
     
-    prompt += get_df(csv_loc,"場所ID",order["現在位置"],"プロンプト")
+    prompt += get_df(csvname, csv_loc,"地名",order["現在位置"],"プロンプト")
     prompt += ","
-    negative += get_df(csv_loc,"場所ID",order["現在位置"],"ネガティブ")
+    negative += get_df(csvname, csv_loc,"地名",order["現在位置"],"ネガティブ")
     negative += ","
 
     return prompt, negative
@@ -436,13 +438,13 @@ def cumshot(order):
         prompt += "(ejaculation, projectile cum),"
     #射精エフェクト
     if 射精箇所 != 0:
-        csvfile_path= os.path.join(os.path.dirname(__file__), 'csvfiles\\Effect.csv')
+        csvname, csvfile_path= promp_csv_path(csvlist, 'Effect.csv')
         csv_efc = pd.read_csv(filepath_or_buffer=csvfile_path)
 
         if order["MASTER射精量"] <= 1:
-            prompt += get_df(csv_efc,"名称","主人が射精","プロンプト") + ","
+            prompt += get_df(csvname, csv_efc,"名称","主人が射精","プロンプト") + ","
         else:
-            prompt += get_df(csv_efc,"名称","主人が大量射精","プロンプト") + ","
+            prompt += get_df(csvname, csv_efc,"名称","主人が大量射精","プロンプト") + ","
 
     return prompt
 
@@ -467,13 +469,13 @@ def stain(order,flags):
 def get_kaizoudo(order):
     # TRAINとその他のEVENTで読み取るcsvが異なる
     if order["scene"] == "TRAIN":
-        csvfile_path= os.path.join(os.path.dirname(__file__), 'csvfiles\\Train.csv')
+        csvname, csvfile_path= promp_csv_path(csvlist, 'Train.csv')
         csvfile = pd.read_csv(filepath_or_buffer=csvfile_path)
-        kaizoudo = str(get_df(csvfile,"コマンド番号",str(order["コマンド"]),"解像度"))
+        kaizoudo = str(get_df(csvname,csvfile,"コマンド番号",str(order["コマンド"]),"解像度"))
     else:
-        csvfile_path= os.path.join(os.path.dirname(__file__), 'csvfiles\\Event.csv')
+        csvname, csvfile_path= promp_csv_path(csvlist, 'Event.csv')
         csvfile = pd.read_csv(filepath_or_buffer=csvfile_path)
-        kaizoudo = str(get_df(csvfile,"名称",str(order["scene"]),"解像度"))
+        kaizoudo = str(get_df(csvname,csvfile,"名称",str(order["scene"]),"解像度"))
     
     return kaizoudo
 
@@ -481,7 +483,7 @@ def get_kaizoudo(order):
 def clothing(order,flags):
     prompt = ""
     negative = ""
-    csvfile_path= os.path.join(os.path.dirname(__file__), 'csvfiles\\Cloth.csv')
+    csvname, csvfile_path= promp_csv_path(csvlist, 'Cloth.csv')
     csv_clo = pd.read_csv(filepath_or_buffer=csvfile_path)
     # 脱衣コマンドのコマンド番号
     N上半身脱衣_上着 = "200"
@@ -548,8 +550,8 @@ def clothing(order,flags):
         for clo in clothings:
             clothNo = str(order[clo])
             if order[clo] != 0:
-                prompt += "(wearing "  + 今日の服(order,clothNo) + " " + get_df(csv_clo,"衣類番号",clothNo,"プロンプト") + ":1.3),"
-                negative += get_df(csv_clo,"衣類番号",clothNo,"ネガティブ") + ","
+                prompt += "(wearing " + " " + get_df(csvname, csv_clo,"装備名",clothNo,"プロンプト") + ":1.3),"
+                negative += get_df(csvname, csv_clo,"装備名",clothNo,"ネガティブ") + ","
 
     # 下半身上着
     if (パンツ露出フラグ == 0 and 秘部露出フラグ == 0) or 下半身はだけフラグ == 1:
@@ -557,18 +559,18 @@ def clothing(order,flags):
         for clo in clothings:
             clothNo = str(order[clo])
             if order[clo] != 0:
-                prompt += "(wearing "  + 今日の服(order,clothNo) + " " + get_df(csv_clo,"衣類番号",clothNo,"プロンプト") + ":1.3),"
-                negative += get_df(csv_clo,"衣類番号",clothNo,"ネガティブ") + ","
+                prompt += "(wearing " + " " + get_df(csvname, csv_clo,"装備名",clothNo,"プロンプト") + ":1.3),"
+                negative += get_df(csvname, csv_clo,"装備名",clothNo,"ネガティブ") + ","
 
 
     if ブラ露出フラグ == 1:
         if order["上半身下着２"] != 0:
-            prompt += "(wearing "  + 今日の服(order,"8888") + " " + get_df(csv_clo,"衣類番号",str(order["上半身下着２"]),"プロンプト") + ":1.3),"
+            prompt += "(wearing " + " " + get_df(csvname, csv_clo,"装備名",str(order["上半身下着２"]),"プロンプト") + ":1.3),"
 
     if パンツ露出フラグ == 1:
         if order["下半身下着２"] != 0:
             # パンツの種類は未対応
-            prompt += "(wearing "  + 今日の服(order,"8888") + " panties:1.3),"
+            prompt += "(wearing " + " panties:1.3),"
 
     # panty aside
     # 挿入とクンニ
@@ -578,27 +580,6 @@ def clothing(order,flags):
 
     return prompt,negative
 
-# 日付とキャラ番号を使った疑似乱数でその日の服の色形を固定する
-def 今日の服(order,clothNo):
-    clothcolor = ""
-    # 色決まってるようなやつは除外　ブルマ、白衣、ワイシャツ、体操服、スク水
-    if not clothNo in ["802","1210","1304","1322","1701"]:
-        clothcolor = ""
-        random.seed(int(order["キャラ固有番号"])+int(order["日付"])+int(clothNo))
-
-        # 確率で水玉、ストライプ、チェック柄を入れてみるテスト
-        ra = random.randrange(10)
-        if ra == 0:
-            clothcolor += "polka-dots "
-        elif ra == 1:
-            clothcolor += "stripes pattern "
-        elif ra == 2:
-            clothcolor += "plaid "
-            
-        colors = ["light blue","yellow","white","black","light green","pink","purple"]
-        clothcolor += random.choice(colors)
-
-    return clothcolor
 
 def 上半身上着重ね着数(order):
     return ((order["上半身上着１"] != 0) + (order["上半身上着２"] != 0) + (order["ボディースーツ"] != 0) + (order["ワンピース"] != 0) + (order["着物"] != 0) + (order["レオタード"] != 0))
