@@ -189,26 +189,43 @@ SIF LOCAL:2 >= 1
 LOCALS = %LOCALS%\},
 
 
-;EQUIP_NAME
-FOR LOCAL, 12001, 12025
-    STR:LOCAL = 
-NEXT
-
-CALL SHOW_CLOTHES(NO,"現在の衣装",)
-
-LOCALS = %LOCALS%"EQUIPNAME":\{
+; EQUIP_NAME
+LOCALS = %LOCALS%"wear":\{
 LOCAL:2 = 0
-FOR LOCAL, 12001, 12025
-    SIF STRLENS(STR:LOCAL) > 0 
-		LOCALS = %LOCALS%"{LOCAL - 12000}":" %STR:LOCAL%",
-		LOCAL:2 += 1
-NEXT
+REPEAT 25
+    LOCAL = COUNT
+    SIF EQUIP:LOCAL < 1
+        CONTINUE
+    LOCAL:1 = 装備部位INDEX(LOCAL)
+    PRINTFORML {LOCAL:1}
+    LOCALS:1 = %CLOTHNAME(LOCAL:1, EQUIP:NO:(LOCAL:1))%
+    PRINTFORML %LOCALS:1%
+    LOCALS = %LOCALS%"{LOCAL}":"%LOCALS:1%",
+    LOCAL:2 += 1
+REND
 
 ; 余分なカンマを削除
 SIF LOCAL:2 >= 1
     LOCALS = %SUBSTRING(LOCALS,0,STRLENS(LOCALS)-1)%
 LOCALS = %LOCALS%\},
 
+;upper_underwear_NAME
+LOCALS = %LOCALS%"upper_underwear":\{
+LOCALS:1 = %BRANAME(EQUIP:NO:上半身下着１, NO)%
+LOCALS = %LOCALS%"{LOCAL}":" %LOCALS:1%",
+
+; 余分なカンマを削除
+LOCALS = %SUBSTRING(LOCALS,0,STRLENS(LOCALS)-1)%
+LOCALS = %LOCALS%\},
+
+;lower_underwear_NAME
+LOCALS = %LOCALS%"lower_underwear":\{
+LOCALS:1 = %PANTSNAME(EQUIP:NO:下半身下着２, NO)%
+LOCALS = %LOCALS%"{LOCAL}":" %LOCALS:1%",
+
+; 余分なカンマを削除
+LOCALS = %SUBSTRING(LOCALS,0,STRLENS(LOCALS)-1)%
+LOCALS = %LOCALS%\},
 
 ;TEQUIP------------------------------------------------------------------
 ;値が1以上のものすべてについて、変数の番号をそのまま書き出す。
@@ -368,12 +385,16 @@ LOCALS = %LOCALS%"MASTER射精量":{NOWEX:MASTER:射精},
 
 LOCALS = %LOCALS%"下半身下着１":{EQUIP:下半身下着１},
 LOCALS = %LOCALS%"下半身下着２":{EQUIP:下半身下着２},
+LOCAL = 下半身下着表示(NO)
+LOCALS = %LOCALS%"下半身下着表示フラグ":{LOCAL},
 LOCALS = %LOCALS%"下半身上着１":{EQUIP:下半身上着},
 ;eraTWで無い変数なので常に0を出力する
 LOCALS = %LOCALS%"下半身上着２":0,
 LOCALS = %LOCALS%"スカート":{EQUIP:スカート},
 LOCALS = %LOCALS%"上半身下着１":{EQUIP:上半身下着１},
 LOCALS = %LOCALS%"上半身下着２":{EQUIP:上半身下着２},
+LOCAL = 上半身下着表示(NO)
+LOCALS = %LOCALS%"上半身下着表示フラグ":{LOCAL},
 LOCALS = %LOCALS%"上半身上着１":{EQUIP:上半身上着１},
 LOCALS = %LOCALS%"上半身上着２":{EQUIP:上半身上着２},
 LOCALS = %LOCALS%"ボディースーツ":{EQUIP:ボディースーツ},
@@ -416,3 +437,25 @@ PRINTFORML {SELECTCOM}
 	ELSEIF ARGS == "真名看破"
 		FLAG:8800 = 3	
 	ENDIF
+
+;
+@装備部位INDEX(ARG)
+#FUNCTION
+#DIMS 装備部位INDEX
+{
+#DIMS CONST 表示部位, 23 = "", 
+	"帽子", "アクセサリ", "腕部装束", 
+	"外衣",
+	"上半身上着１","上半身上着２", 
+	"着物", "ワンピース",
+	"スカート", "下半身上着", "ズボン", 
+	"レオタード", "ボディースーツ", 
+	"上半身下着１", "上半身下着２", 
+	"下半身下着１", "下半身下着２", 
+	"その他１", "その他２", "その他３", 
+	"靴下", "靴"
+}
+LOCAL = ARG + 1
+; PRINTFORML %表示部位:LOCAL%
+RETURNF FINDELEMENT(EQUIPNAME, 表示部位:LOCAL)
+
