@@ -239,11 +239,23 @@ csvlist = generate_csvlist()
 
 
 #csvlistup関数でリストアップしたcsvlistをファイル名をキーに検索Pathを返す
-def promp_csv_path(csvlist, promptcsv):
+def find_csv_path(csv_name):
     # CSVファイルリストを読み込む
     with open(csvlist, mode='r', encoding='utf-8') as csvfile:
         reader = csv.reader(csvfile)
         for row in reader:
-            if row[0].lower() == promptcsv.lower():  # 大文字小文字を区別しない比較
+            if row[0].lower() == csv_name.lower():  # 大文字小文字を区別しない比較
                 return row[0], row[1]  # ファイル名とパスを返す
-    return print (f"{promptcsv}のPathが見つからないぜ") # ファイルが見つからない場合
+    return print (f"{csv_name}のPathが見つからないぜ") # ファイルが見つからない場合
+
+
+def load_csv(csv_path):
+    csv_dict = {}
+    with open(csv_path, mode='r', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            if row:  # 空の行を無視する
+                key = row[0]
+                value = row[1:]  # 最初の列以外を値として使用
+                csv_dict[key] = value
+    return csv_dict

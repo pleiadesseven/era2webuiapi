@@ -7,7 +7,7 @@ from sub import get_df
 from sub import get_df_2key
 from sub import get_width_and_height
 from sub import chikan
-from sub import promp_csv_path
+from sub import find_csv_path
 from sub import csvlist
 
 # order自体を変化させる前処理
@@ -57,10 +57,10 @@ def promptmaker(order):
     flags = {"drawchara":0,"drawface":0,"drawbreasts":0,"drawvagina":0,"drawanus":0}
 
     # Effect.csvとEvent.csvを読みこんでおく
-    csvname, csvfile_path= promp_csv_path(csvlist, 'Effect.csv')
+    csvname, csvfile_path= find_csv_path(csvlist, 'Effect.csv')
     csv_efc = pd.read_csv(filepath_or_buffer=csvfile_path)
 
-    csvname, csvfile_path= promp_csv_path(csvlist, 'Event.csv')
+    csvname, csvfile_path= find_csv_path(csvlist, 'Event.csv')
     csv_eve = pd.read_csv(filepath_or_buffer=csvfile_path)
 
     prompt += get_df(csvname, csv_efc,'名称','基礎プロンプト','プロンプト') + ","
@@ -89,7 +89,7 @@ def promptmaker(order):
     #ここからTRAIN コマンド実行時の絵
     if order["scene"] == "TRAIN":
         #コマンドの処理 Train.csvを読む
-        csvname, csvfile_path= promp_csv_path(csvlist, 'Train.csv')
+        csvname, csvfile_path= find_csv_path(csvlist, 'Train.csv')
         csv_tra = pd.read_csv(filepath_or_buffer=csvfile_path)
 
         # TRAINNAME関数はないと思い込んでいたので番号で処理している
@@ -174,9 +174,9 @@ def promptmaker(order):
         prompt += get_df(csvname, csv_efc,"名称","人物プロンプト","プロンプト") + ","
 
         # Character.csvとAdd_character.csvを結合
-        csvname, csvfile_path= promp_csv_path(csvlist, 'Character.csv')
+        csvname, csvfile_path= find_csv_path(csvlist, 'Character.csv')
         csv_cha = pd.read_csv(filepath_or_buffer=csvfile_path)
-        csvname, csvfile_path= promp_csv_path(csvlist, 'Add_Character.csv')
+        csvname, csvfile_path= find_csv_path(csvlist, 'Add_Character.csv')
         add_cha = pd.read_csv(filepath_or_buffer=csvfile_path)
 
         csv_cha = pd.concat([csv_cha,add_cha])
@@ -301,7 +301,7 @@ def promptmaker(order):
 def body_shape (order,flags):
     prompt = ""
     negative = ""
-    csvname, csvfile_path= promp_csv_path(csvlist, 'Talent.csv')
+    csvname, csvfile_path= find_csv_path(csvlist, 'Talent.csv')
     csv_tal = pd.read_csv(filepath_or_buffer=csvfile_path)
 
 
@@ -335,7 +335,7 @@ def body_shape (order,flags):
 
 # 髪色
 # def haircolor(order):
-#     csvname, csvfile_path= promp_csv_path(csvlist, 'Talent.csv')
+#     csvname, csvfile_path= find_csv_path(csvlist, 'Talent.csv')
 #     csv_tal = pd.read_csv(filepath_or_buffer=csvfile_path)
 #     prompt = ""
 #     negative = ""
@@ -350,7 +350,7 @@ def body_shape (order,flags):
 
 # 髪型 
 def hairstyle(order):
-    csvname, csvfile_path= promp_csv_path(csvlist, 'Talent.csv')
+    csvname, csvfile_path= find_csv_path(csvlist, 'Talent.csv')
     csv_tal = pd.read_csv(filepath_or_buffer=csvfile_path)
     prompt = ""
     negative = ""
@@ -361,12 +361,12 @@ def hairstyle(order):
             negative += get_df(csv_tal,"名称",tal,"ネガティブ") + ","
     return prompt,negative
 
-# 装備
+# 一時装備､SEXTOYなど
 # CSVを2列で検索する
 def equipment(order,flags):
     prompt = ""
     negative = ""
-    csvname, csvfile_path= promp_csv_path(csvlist, 'Equip.csv')
+    csvname, csvfile_path= find_csv_path(csvlist, 'Equip.csv')
     csv_equ = pd.read_csv(filepath_or_buffer=csvfile_path)
 
     N膣装備 = ["11","12","13","22"]
@@ -402,7 +402,7 @@ def get_location(order):
     negative = ""
 
     # 700箇所
-    csvname, csvfile_path= promp_csv_path(csvlist, 'Location.csv')
+    csvname, csvfile_path= find_csv_path(csvlist, 'Location.csv')
     csv_loc = pd.read_csv(filepath_or_buffer=csvfile_path)
     
     prompt += get_df(csvname, csv_loc,"地名",order["現在位置"],"プロンプト")
@@ -438,7 +438,7 @@ def cumshot(order):
         prompt += "(ejaculation, projectile cum),"
     #射精エフェクト
     if 射精箇所 != 0:
-        csvname, csvfile_path= promp_csv_path(csvlist, 'Effect.csv')
+        csvname, csvfile_path= find_csv_path(csvlist, 'Effect.csv')
         csv_efc = pd.read_csv(filepath_or_buffer=csvfile_path)
 
         if order["MASTER射精量"] <= 1:
@@ -469,11 +469,11 @@ def stain(order,flags):
 def get_kaizoudo(order):
     # TRAINとその他のEVENTで読み取るcsvが異なる
     if order["scene"] == "TRAIN":
-        csvname, csvfile_path= promp_csv_path(csvlist, 'Train.csv')
+        csvname, csvfile_path= find_csv_path(csvlist, 'Train.csv')
         csvfile = pd.read_csv(filepath_or_buffer=csvfile_path)
         kaizoudo = str(get_df(csvname,csvfile,"コマンド番号",str(order["コマンド"]),"解像度"))
     else:
-        csvname, csvfile_path= promp_csv_path(csvlist, 'Event.csv')
+        csvname, csvfile_path= find_csv_path(csvlist, 'Event.csv')
         csvfile = pd.read_csv(filepath_or_buffer=csvfile_path)
         kaizoudo = str(get_df(csvname,csvfile,"名称",str(order["scene"]),"解像度"))
     
@@ -483,7 +483,7 @@ def get_kaizoudo(order):
 def clothing(order,flags):
     prompt = ""
     negative = ""
-    csvname, csvfile_path= promp_csv_path(csvlist, 'Cloth.csv')
+    csvname, csvfile_path= find_csv_path(csvlist, 'Cloth.csv')
     csv_clo = pd.read_csv(filepath_or_buffer=csvfile_path)
     # 脱衣コマンドのコマンド番号
     N上半身脱衣_上着 = "200"
@@ -548,24 +548,24 @@ def clothing(order,flags):
     if (ブラ露出フラグ == 0 and 乳露出フラグ == 0) or 上半身はだけフラグ == 1:
         clothings = ["上半身上着１","上半身上着２","ボディースーツ","ワンピース","着物","レオタード"]
         for clo in clothings:
-            clothNo = str(order[clo])
+            clothName= str(order[clo])
             if order[clo] != 0:
-                prompt += "(wearing " + " " + get_df(csvname, csv_clo,"装備名",clothNo,"プロンプト") + ":1.3),"
-                negative += get_df(csvname, csv_clo,"装備名",clothNo,"ネガティブ") + ","
+                prompt += "(wearing " + " " + get_df(csvname, csv_clo,"衣類名",clothName,"プロンプト") + ":1.3),"
+                negative += get_df(csvname, csv_clo,"衣類名",clothName,"ネガティブ") + ","
 
     # 下半身上着
     if (パンツ露出フラグ == 0 and 秘部露出フラグ == 0) or 下半身はだけフラグ == 1:
         clothings = ["下半身上着１","下半身上着２","スカート"]
         for clo in clothings:
-            clothNo = str(order[clo])
+            clothName = str(order[clo])
             if order[clo] != 0:
-                prompt += "(wearing " + " " + get_df(csvname, csv_clo,"装備名",clothNo,"プロンプト") + ":1.3),"
-                negative += get_df(csvname, csv_clo,"装備名",clothNo,"ネガティブ") + ","
+                prompt += "(wearing " + " " + get_df(csvname, csv_clo,"衣類名",clothName,"プロンプト") + ":1.3),"
+                negative += get_df(csvname, csv_clo,"衣類名",clothName,"ネガティブ") + ","
 
 
     if ブラ露出フラグ == 1:
         if order["上半身下着２"] != 0:
-            prompt += "(wearing " + " " + get_df(csvname, csv_clo,"装備名",str(order["上半身下着２"]),"プロンプト") + ":1.3),"
+            prompt += "(wearing " + " " + get_df(csvname, csv_clo,"衣類名",str(order["上半身下着２"]),"プロンプト") + ":1.3),"
 
     if パンツ露出フラグ == 1:
         if order["下半身下着２"] != 0:
