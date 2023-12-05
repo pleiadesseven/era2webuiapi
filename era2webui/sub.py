@@ -245,17 +245,25 @@ def find_csv_path(csv_name):
         reader = csv.reader(csvfile)
         for row in reader:
             if row[0].lower() == csv_name.lower():  # 大文字小文字を区別しない比較
-                return row[0], row[1]  # ファイル名とパスを返す
+                return row[1]  #パスを返す
     return print (f"{csv_name}のPathが見つからないぜ") # ファイルが見つからない場合
 
 
 def load_csv(csv_path):
-    csv_dict = {}
     with open(csv_path, mode='r', encoding='utf-8') as file:
-        reader = csv.reader(file)
-        for row in reader:
-            if row:  # 空の行を無視する
-                key = row[0]
-                value = row[1:]  # 最初の列以外を値として使用
-                csv_dict[key] = value
-    return csv_dict
+        # 最初の行だけを読み込む
+        first_line = file.readline()
+
+        # ファイルを先頭に戻す
+        file.seek(0)
+
+        # 最初の行が数字で始まる場合はcsv.readerを使用
+        if first_line[0].isdigit():
+            reader = csv.reader(file)
+            data = [row for row in reader]
+        # 文字で始まる場合はcsv.DictReaderを使用
+        else:
+            reader = csv.DictReader(file)
+            data = [row for row in reader]
+    #戻り値はリスト型
+    return data
