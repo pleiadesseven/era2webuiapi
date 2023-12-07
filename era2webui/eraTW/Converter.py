@@ -1,163 +1,149 @@
 # #eraTWってTEXTLOGで吐き出した変数そのまま使いにくいぞ
 # #取得した変数を引数に使える形に変更するコンバーター
 # #関数名はTWのERBとさして変わりがないぜ
-
-
-from sub import find_csv_path
-from sub import load_csv
-
-
+from sub import CSVManager
+csvm = CSVManager()
 
 
 # 特定のオブジェクトの情報を取得する関数
 # @get_str 関数の実装
 def get_str(obj_manager, class_name, object_id, attribute_name):
-    class_data = obj_manager.existence.get(class_name, {})
+    class_data = {}
+    for key, value in obj_manager.existence.items():
+        if class_name == "不明なカテゴリー":
+            break
+        if class_name in key: 
+            class_data = value
+            break  # 該当するクラス名が見つかったらループを抜ける
+    
     object_data = class_data.get(object_id, {})
+    if not isinstance(object_data, dict):
+        object_data = {}  # 辞書型でなければ空の辞書を使用
     return object_data.get(attribute_name, "データが見つかりません")
     
     
 class ObjExistenceManager:
     def __init__(self):
-        self.existence = {}
-        self.category_mapping = {}
+        self.existence = {}       #後で整理する
+        self.clothcsv = {}        
+        self.category_mapping = {}#装備カテゴリ 
+        self.equipcategory = {}
+        self.display_part = {}    #表示部位
+        self.equipname = {}       #装備名
+        self.equip_position = {}  #装備部位
+        self.clothdata_from_csv()
+        self.load_equipname()
+        self.load_equipcategory()
+        self.load_display_part()
+        self.integrate_display_part()
+        self.make_all_class_list()
+        self.add_data_from_cloth()
+        self.integrate_category()
 
+    def make_all_class_list(self):
+        #キャラは1万､それ以外は500
+        self.set_list_exist("キャラデータ", 0, 10000)
+        self.set_list_exist("キャラリスト", 0, 500)
+        self.set_list_exist("衣装セット", 0, 500)
+        self.set_list_exist("腕部装束", 0, 500)
+        self.set_list_exist("頭装備", 0, 500)
+        self.set_list_exist("着物", 0, 500)
+        self.set_list_exist("上半身上着_はだけ不可", 0, 500)
+        self.set_list_exist("上半身上着_はだけ可能", 0, 500)
+        self.set_list_exist("上半身下着_はだけ不可", 0, 500)
+        self.set_list_exist("上半身下着_はだけ可能", 0, 500)
+        self.set_list_exist("靴下", 0, 500)
+        self.set_list_exist("靴", 0, 500)
+        self.set_list_exist("外衣", 0, 500)
+        self.set_list_exist("下半身下着_ずらし不可", 0, 500)
+        self.set_list_exist("下半身下着_ずらし可能", 0, 500)
+        self.set_list_exist("ワンピース", 0, 500)
+        self.set_list_exist("レオタード", 0, 500)
+        self.set_list_exist("ボディースーツ", 0, 500)
+        self.set_list_exist("その他衣装", 0, 500)
+        self.set_list_exist("ズボン", 0, 500)
+        self.set_list_exist("スカート", 0, 500)
+        self.set_list_exist("アクセサリ", 0, 500)
+        self.set_list_exist("一般依頼", 0, 500)
+        self.set_list_exist("FreeAct", 0, 500)
+        self.set_list_exist("酒データ", 0, 500)
+
+
+
+    def clothdata_from_csv(self):
+        data = csvm.read_csv("Cloth.csv")
+        # 空の辞書を用意する
+        all_data = {}
+
+        for item in data:
+            # 各行のデータを取得
+            key = item.get('e2wNO')  # 'e2wNO' をキーとして使用する
+            if key:
+                # 各行の辞書を辞書に追加する
+                all_data[key] = item
+
+        # 統合した辞書をインスタンス変数に格納
+        self.clothcsv = all_data
+
+    # display_part 辞書に(表示部位:n)のCSVデータを追加
+    def load_display_part(self):
+        display_part_list = csvm.read_csv('display_part.csv')
+        # CSVデータを辞書に追加
+        self.display_part = {item['display_part_no']: item['display_part'] for item in display_part_list}
+
+    #equipname 辞書にequipname.csvを登録
+    def load_equipname(self):
+        equipname_list = csvm.read_csv('equipname.csv')
+        self.equipname = {item['position_no']: item['equipname'] for item in equipname_list}
+
+    #equipcategory 辞書にequip_name,categoryを追加
+    def load_equipcategory(self):
+        category_list = csvm.read_csv('equipcategory.csv')
+        self.equipcategory = {item['equip_name']: item['category'] for item in category_list}
+
+    
+    #class_nameに対応する空の辞書データを作成
     def set_list_exist(self, class_name, obj_first, obj_last):
         if class_name not in self.existence:
             self.existence[class_name] = {}
         for obj_id in range(obj_first, obj_last + 1):
-            self.existence[class_name][obj_id] = False
-            
+            self.existence[class_name][obj_id] = False  # または適切な初期値
+
+
     def add_or_update_data(self, class_name, obj_id, data):
         if class_name not in self.existence:
+            # class_name が存在しない場合、新しいカテゴリとして追加
             self.existence[class_name] = {}
+        # obj_id に対応するデータを追加または更新
         self.existence[class_name][obj_id] = data
 
 
-    # 登録されたデータを全て表示するメソッド
-    def display_all_data(self):
-        for key, value in self.existence.items():
-            print(f"Key: {key}, Value: {value}")
+    def add_data_from_cloth(self):
+        # self.cloth のデータを self.existence に追加または更新
+        for item in self.clothcsv.values():
+            equippart = item.get("装備部位")
+            if not equippart:
+                continue  # 装備部位がない場合はスキップ
             
-
-    def make_all_class_list(self):
-        #上限値は1万あれば足るだろう
-        self.set_list_exist("キャラデータ", 0, 10000)
-        self.set_list_exist("キャラリスト", 0, 10000)
-        self.set_list_exist("衣装セット", 0, 10000)
-        self.set_list_exist("腕部装束", 0, 10000)
-        self.set_list_exist("頭装備", 0, 10000)
-        self.set_list_exist("着物", 0, 10000)
-        self.set_list_exist("上半身上着_はだけ不可", 0, 10000)
-        self.set_list_exist("上半身上着_はだけ可能", 0, 10000)
-        self.set_list_exist("上半身下着_はだけ不可", 0, 10000)
-        self.set_list_exist("上半身下着_はだけ可能", 0, 10000)
-        self.set_list_exist("靴下", 0, 10000)
-        self.set_list_exist("靴", 0, 10000)
-        self.set_list_exist("外衣", 0, 10000)
-        self.set_list_exist("下半身下着_ずらし不可", 0, 10000)
-        self.set_list_exist("下半身下着_ずらし可能", 0, 10000)
-        self.set_list_exist("レオタード", 0, 10000)
-        self.set_list_exist("ボディースーツ", 0, 10000)
-        self.set_list_exist("その他衣装", 0, 10000)
-        self.set_list_exist("ズボン", 0, 10000)
-        self.set_list_exist("スカート", 0, 10000)
-        self.set_list_exist("FreeAct", 0, 10000)
-        self.set_list_exist("酒データ", 0, 10000)
+            equipname = item.get("衣類名")
+            category = item.get("カテゴリ")
+            if not category:
+                category = self.get_category_mapping(equippart)
+            category_no = item.get("カテゴリ内番号", None)
+        
+            if category is not None and category_no is not None:
+                self.add_or_update_data(category, category_no, equipname)
 
 
-    def load_data_from_csv(self, file_path):
-        data = load_csv(file_path)
-        for index, item in enumerate(data):
-            if index == 0:  # 最初の行（項目名の行）をスキップ
-                continue
-            key = index - 1  # 行インデックスから1を引いてキーとして使用
-            self.existence[key] = item
-
-
-    #該当番号の装備部位の文字列を返す (表示部位:LOCAL)
+    #該当番号の表示部位の文字列を返す (表示部位:LOCAL)
     def get_display_part(self, part_no):
-        display_part_csv_path = find_csv_path('display_part.csv')
-        
-    # 取得したパスでequipname_listを初期化
-        display_part_list = load_csv(display_part_csv_path)
-        
-        part_no_str = str(part_no)  # part_no を文字列に変換
-        
-        for item in display_part_list:
-            if item[0] == part_no_str:  # 引数で渡された番号とキーを比較
-                return item[1]  # 対応する表示部位を返す
-        return -1  # 要素が見つからない場合は-1を返す 
+        # display_part辞書から部位番号に対応する表示部位を取得
+        return self.display_part.get(str(part_no), -1)  # 辞書に部位番号がなければ-1を返す
 
 
-    #@SHOW_CLOTHES装備部位 = FINDELEMENT(EQUIPNAME, 表示部位:LOCAL) と同じ機能
     def get_equip_position(self, display_part):
-        # equipname.csvのパスを取得
-        equipname_csv_path = find_csv_path('equipname.csv')
-
-        # 取得したパスでequipname_listを初期化
-        equipname_list = load_csv(equipname_csv_path)
-        #print (f"equipname_list {equipname_list}")
-        for item in equipname_list:
-            #print(item)
-            # リストの長さが2以上であることを確認
-            if len(item) >= 2 and display_part == item[1]:
-                return item[0]  # 対応する装備部位番号を返す
-        return -1  # 要素が見つからない場合は-1を返す
-
-
-    #装備部位(get_equip_position)とカテゴリの対応関係をマッピングself.category_mapping = {}に値を格納
-    def set_category_mapping(self, position_no):
-        equipname_csv_path = find_csv_path('equipname.csv')
-        equipname_list = load_csv(equipname_csv_path)
-        
-        # position_no を文字列に変換
-        position_no_str = str(position_no)
-
-        # 引数として渡された position_no が equipname_dict に存在するか確認
-        for item in equipname_list:
-            if len(item) >= 2 and position_no_str == item[0]:  # 最初の要素（装備部位番号）を確認
-                equip_name = item[1]  # 対応する装備名を取得
-                if equip_name:  # equip_name が空でないことを確認
-                    self.category_mapping[position_no] = self.determine_category(equip_name)
-                    return  # 見つかった場合、ループを終了
-        raise ValueError(f"存在しない装備部位番号: {position_no}")  # 対応する装備部位番号が見つからない場合
-
-
-    def determine_category(self, equip_name):
-        equip_part_category = equip_name
-        # print (f"aaaaaaaaaa{equip_part_category}")
-        
-        if equip_part_category in ["下半身下着2"]:
-            return "パンツ"
-        elif equip_part_category in ["着物", "レオタード", "ボディースーツ", "ワンピース"]:
-            return "全身衣装"
-        elif equip_part_category in ["帽子", "外衣", "腕部装束", "上半身上着1", "上半身上着2", "上半身下着1", "上半身下着2"]:
-            return "上半身衣装"
-        elif equip_part_category in ["スカート", "ズボン", "靴", "靴下", "下半身下着1"]:
-            return "下半身衣装"
-        elif equip_part_category in ["アクセサリ", "その他1", "その他2", "その他3"]:
-            return "その他衣装"
-        elif equip_part_category in ["アクセサリ", "靴", "靴下", "レオタード", "ボディースーツ", "ズボン", "スカート", "ワンピース", "着物", "外衣", "腕部装束"]:
-            return equip_part_category
-        elif equip_part_category == "帽子":
-            return "頭装備"
-        elif equip_part_category == "下半身下着1":
-            return "下半身下着_ずらし不可"
-        elif equip_part_category == "下半身下着2":
-            return "下半身下着_ずらし可能"
-        elif equip_part_category == "上半身下着1":
-            return "上半身下着_はだけ不可"
-        elif equip_part_category == "上半身下着2":
-            return "上半身下着_はだけ可能"
-        elif equip_part_category == "上半身上着1":
-            return "上半身上着_はだけ不可"
-        elif equip_part_category == "上半身上着2":
-            return "上半身上着_はだけ可能"
-        elif equip_part_category in ["その他1", "その他2", "その他3", "下半身上着"]:
-            return "その他衣装"
-        else:
-            raise ValueError(f"不明な部位: {equip_part_category} 渡された引数: {equip_name}")
+        #next() 関数は、リストや文字列などの要素を順番に取得
+        return next((key for key, value in self.equipname.items() if value == display_part), None)
 
 
     #装備部位の番号から該当する衣装カテゴリを返す
@@ -165,3 +151,61 @@ class ObjExistenceManager:
         return self.category_mapping.get(get_equip_position_no, "不明なカテゴリー")
 
 
+    def integrate_display_part(self):
+        for key, value in self.clothcsv.items():
+            cloth_name = value.get("衣類名")
+            for display_part_no, display_part_name in self.display_part.items():
+                if cloth_name == display_part_name:
+                    # 表示部位名が一致する場合、表示部位番号と名前をdisplay_part辞書に追加
+                    value['表示部位NO'] = display_part_no
+                    value['表示部位'] = display_part_name
+
+
+    #装備部位かからカテゴリの文字列を返す
+    def get_category_mapping(self, equippart):
+        # display_part辞書から部位番号に対応する表示部位を取得
+        return self.category_mapping.get(str(equippart), -1)  # 辞書に部位番号がなければ-1を返す
+    
+    #equipcategory
+    def integrate_category(self):
+        category_mapping = {} #一助保存用の空辞書
+        for equip_name, category in self.equipcategory.items():
+            # equipname 辞書で装備名に対応する部位番号を探す
+            for position_no, name in self.equipname.items():
+                if name == equip_name:
+                    # 部位番号とカテゴリの対応関係を新しい辞書に追加
+                    category_mapping[position_no] = category
+        # 更新した category_mapping をインスタンス変数に格納
+        self.category_mapping = category_mapping
+    
+    
+    def get_cloth_name(self, position_no, equip_no_position):
+    # 装備部位に基づいてカテゴリを取得
+        category = self.clothes_parts_to_category(position_no)
+
+        # カテゴリと装備部位番号に基づいて衣装の名前を取得
+        attribute_name = "衣類名"
+        cloth_name = get_str(self,category, equip_no_position, attribute_name)
+        return cloth_name
+
+
+    # 登録されたデータを全て表示するメソッド
+    def display_all_data(self):
+        for key, value in self.existence.items():
+            print(f"Key: {key}, Value: {value}")
+
+
+    #クラス辞書をCSVに出力 デバック用
+    def export_to_csv(self):
+        # existence.csv の書き出し
+        csvm.write_dict_to_csv('existence.csv', self.clothcsv, is_nested_dict=True)
+        # clothcsv.csv の書き出し
+        csvm.write_dict_to_csv('clothcsv.csv', self.clothcsv, is_nested_dict=True)
+        # category_mapping.csv の書き出し
+        csvm.write_dict_to_csv('category_mapping.csv', self.category_mapping, headers=None, is_nested_dict=False)
+        # display_part.csv の書き出し
+        csvm.write_dict_to_csv('display_part.csv', self.display_part, headers=None, is_nested_dict=False)
+        # equip_position.csv の書き出し
+        csvm.write_dict_to_csv('equip_position.csv', self.equip_position, headers=None, is_nested_dict=False)
+        # equipname.csv の書き出し
+        csvm.write_dict_to_csv('equipname.csv', self.equipname, headers=None, is_nested_dict=False)

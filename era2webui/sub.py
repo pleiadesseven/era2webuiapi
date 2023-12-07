@@ -192,78 +192,114 @@ def get_width_and_height(kaizoudo,Replacelist):
     
     return width,height
 
+class CSVManager:
+    def __init__(self):
+        self.csvlist = self.generate_csvlist()
+        self.loaded_csvs = {}  # キャッシュ用
+    
+    
+    def generate_csvlist(self):
+        # sub.pyが存在するディレクトリのパスを取得
+        base_dir = os.path.dirname(__file__)
 
-def generate_csvlist():
-    # sub.pyが存在するディレクトリのパスを取得
-    base_dir = os.path.dirname(__file__)
+        # era2webui.pyのパスを構築
+        era2webui_path = os.path.join(base_dir, 'era2webui.py')
 
-    # era2webui.pyのパスを構築
-    era2webui_path = os.path.join(base_dir, 'era2webui.py')
+        # era2webui.pyを読み込んでインポート文を検索
+        with open(era2webui_path, 'r', encoding='utf-8') as file:
+            content = file.read()
 
-    # era2webui.pyを読み込んでインポート文を検索
-    with open(era2webui_path, 'r', encoding='utf-8') as file:
-        content = file.read()
+        # コメントアウトされていないインポート文を検索
+        match = re.search(r'^from (eratohoYM|eraTW|eraImascgpro)', content, re.MULTILINE)
 
-    # コメントアウトされていないインポート文を検索
-    match = re.search(r'^from (eratohoYM|eraTW|eraImascgpro)', content, re.MULTILINE)
+        if match:
+            # 一致したモジュール名を取得
+            imported_module = match.group(1)
+            print(f"対応するeraバリアント: {imported_module}")
 
-    if match:
-        # 一致したモジュール名を取得
-        imported_module = match.group(1)
-        print(f"対応するeraバリアント: {imported_module}")
+            # モジュール名を含むディレクトリへのパスを組み立てる
+            variantdir = os.path.join(os.path.dirname(__file__), imported_module)
+            csvdir = os.path.join(variantdir, 'csvfiles')
 
-        # モジュール名を含むディレクトリへのパスを組み立てる
-        variantdir = os.path.join(os.path.dirname(__file__), imported_module)
-        csvdir = os.path.join(variantdir, 'csvfiles')
+            # 指定ディレクトリ内の全てのCSVファイルのパスを取得
+            csv_files = glob.glob(os.path.join(csvdir, '*.csv'))
 
-        # 指定ディレクトリ内の全てのCSVファイルのパスを取得
-        csv_files = glob.glob(os.path.join(csvdir, '*.csv'))
+            # CSVファイルの名前とアドレスをCSVファイルに保存
+            csv_list_path = os.path.join(variantdir, 'csv_list.csv')
+            with open(csv_list_path, 'w', newline='', encoding='utf-8') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(["name", "path"])
+                for file in csv_files:
+                    file_name = os.path.basename(file)
+                    writer.writerow([file_name, file])
 
-        # CSVファイルの名前とアドレスをCSVファイルに保存
-        csv_list_path = os.path.join(variantdir, 'csv_list.csv')
-        with open(csv_list_path, 'w', newline='', encoding='utf-8') as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerow(["name", "path"])
-            for file in csv_files:
-                file_name = os.path.basename(file)
-                writer.writerow([file_name, file])
-
-        print(f"{imported_module}のCSVファイルのリストを '{csv_list_path}' に保存したぜ。")
-        return csv_list_path
-    else:
-        print("バリアントを選んでfromのコメントアウトを解除してください")
-        return None
-
-# グローバル変数としてcsvlistを定義
-csvlist = generate_csvlist()
-
-
-#csvlistup関数でリストアップしたcsvlistをファイル名をキーに検索Pathを返す
-def find_csv_path(csv_name):
-    # CSVファイルリストを読み込む
-    with open(csvlist, mode='r', encoding='utf-8') as csvfile:
-        reader = csv.reader(csvfile)
-        for row in reader:
-            if row[0].lower() == csv_name.lower():  # 大文字小文字を区別しない比較
-                return row[1]  #パスを返す
-    return print (f"{csv_name}のPathが見つからないぜ") # ファイルが見つからない場合
-
-
-def load_csv(csv_path):
-    with open(csv_path, mode='r', encoding='utf-8') as file:
-        # 最初の行だけを読み込む
-        first_line = file.readline()
-
-        # ファイルを先頭に戻す
-        file.seek(0)
-
-        # 最初の行が数字で始まる場合はcsv.readerを使用
-        if first_line[0].isdigit():
-            reader = csv.reader(file)
-            data = [row for row in reader]
-        # 文字で始まる場合はcsv.DictReaderを使用
+            print(f"{imported_module}のCSVファイルのリストを '{csv_list_path}' に保存したぜ。")
+            return csv_list_path
         else:
-            reader = csv.DictReader(file)
-            data = [row for row in reader]
-    #戻り値はリスト型
-    return data
+            print("バリアントを選んでfromのコメントアウトを解除してください")
+            return None
+
+
+    def read_csv(self, csv_name):
+            csv_path = self.find_csv_path(csv_name)
+            if csv_path is None:
+                print(f"{csv_name} のPathが見つからないぜ")
+                return None
+
+
+            return self.load_csv(csv_path)
+    
+    #csvlistup関数でリストアップしたcsvlistをファイル名をキーに検索Pathを返す
+    def find_csv_path(self,csv_name):
+        # CSVファイルリストを読み込む
+        with open(self.csvlist, mode='r', encoding='utf-8') as csvfile:
+            reader = csv.reader(csvfile)
+            for row in reader:
+                if row[0].lower() == csv_name.lower():  # 大文字小文字を区別しない比較
+                    return row[1]  #パスを返す
+        return print (f"{csv_name}のPathが見つからないぜ") # ファイルが見つからない場合
+
+
+    def load_csv(self,csv_path):
+        with open(csv_path, mode='r', encoding='utf-8') as file:
+            # 最初の行だけを読み込む
+            first_line = file.readline()
+
+            # ファイルを先頭に戻す
+            file.seek(0)
+
+            # 最初の行が数字で始まる場合はヘッダを追加してkeyに使う
+            if first_line[0].isdigit():
+                # ここでヘッダを定義する必要がある
+                headers = [f'column{i}' for i in range(len(first_line.split(',')))]
+                reader = csv.DictReader(file, fieldnames=headers)
+            # 文字で始まる場合はcsv.DictReaderを使用
+            else:
+                reader = csv.DictReader(file)
+                
+            data = [dict(row) for row in reader]
+        # 戻り値は辞書のリスト
+        return data
+
+
+    #DictをCSVに出力する
+    #ヘッダ付きか､ネストされた入れ子構造化は時分で設定する
+    def write_dict_to_csv(self,file_name, data_dict, headers=None, is_nested_dict=True):
+        with open(file_name, 'w', newline='', encoding='utf-8') as file:
+            writer = csv.writer(file)
+            if headers:
+                writer.writerow(headers)
+            else:
+                # ネストされた辞書の場合、最初の要素からヘッダーを取得する
+                if is_nested_dict and data_dict:
+                    headers = ['Key'] + list(data_dict[next(iter(data_dict))].keys())
+                    writer.writerow(headers)
+
+            for key, value in data_dict.items():
+                if is_nested_dict:
+                    # ネストされた辞書の場合、値からリストを作成する
+                    row = [key] + [value.get(header) for header in headers[1:]]
+                else:
+                    # ネストされていない辞書（キーと単一の値）の場合
+                    row = [key, value]
+                writer.writerow(row)
