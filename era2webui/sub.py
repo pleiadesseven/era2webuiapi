@@ -11,11 +11,10 @@ import configparser
 from selenium.webdriver.common.by import By
 import glob
 import csv
-from modulefinder import ModuleFinder
-from pathlib import Path
 import re
 import csv
-
+import json
+import sys
 
 # ブラウザ操作用 webdriver、ポジ、ネガを引数に取ってgenerate
 def gen_Image(driver,prompt,negative,gen_width,gen_height):
@@ -256,12 +255,13 @@ class CSVManager:
             reader = csv.reader(csvfile)
             for row in reader:
                 if row[0].lower() == csv_name.lower():  # 大文字小文字を区別しない比較
-                    return row[1]  #パスを返す
+                    return row[0], row[1]  #名前とパスを返す｡ 名前はエラー表示用
         return print (f"{csv_name}のPathが見つからないぜ") # ファイルが見つからない場合
 
 
-    def load_csv(self,csv_path):
-        with open(csv_path, mode='r', encoding='utf-8') as file:
+    def load_csv(self,path_tuple):
+        csv_path = path_tuple[1] #pathだけ取り出す
+        with open(csv_path, mode='r', encoding='utf-8-sig') as file:
             # 最初の行だけを読み込む
             first_line = file.readline()
 
@@ -303,3 +303,95 @@ class CSVManager:
                     # ネストされていない辞書（キーと単一の値）の場合
                     row = [key, value]
                 writer.writerow(row)
+                
+class SaveJSONHandler:
+    """
+    saveのjsonを扱いやすい形にするクラス
+    """
+    def __init__(self, savetxt_path):
+        self.data = None
+        self.load_save(savetxt_path)
+        self.process_json()
+        self.cast_data()
+
+
+    def load_save(self, savetxt_path):
+        """渡されたpathからJSONを読んで辞書に格納
+        Args:
+            new_savetxt_path (str): txtのpath 
+            FileHandlerとの兼ね合いは後で調整
+        """
+        if savetxt_path is None:
+            print("エラー: ファイルパスが指定されていません。txtの更新を待っています。")
+            return  # メソッドをここで終了させる
+        try:
+            with open(savetxt_path, 'r', encoding='utf-8-sig') as file:
+                self.data = json.load(file)
+        except FileNotFoundError as e:
+            print(f'エラー: ファイル "{savetxt_path}" が見つかりません。 - {str(e)}')
+        except json.JSONDecodeError as e:
+            print(f'エラー: ファイル "{savetxt_path}" の出力がjsonフォーマットになってない。 - {str(e)}')
+            sys.exit()
+
+
+    def process_json(self):
+        """
+        self.dataの処理部を引き渡すだけ
+        こっちのほうがいいよってAI魔理沙が言うから
+        よくわかりません
+        """
+        self._process_nested_data(self.data)
+
+
+    def _process_nested_data(self, data=None, parent_key=''):
+        """
+        ネストされたJSONデータ構造を再帰的に処理する。
+        このメソッドは、与えられたJSONデータ（辞書またはリスト）の各要素を走査し、
+        必要な処理（例：データの変換）を行う。
+        
+        Args:
+            data (dict or list, optional): 処理するJSONデータ。辞書またはリスト形式を想定。
+                Noneが指定された場合、クラスのdata属性を使用する。デフォルトはNone。
+            parent_key (str, optional): 現在処理中のデータの親キーのパス。
+                ネストされたデータ構造内での現在の位置を表す。デフォルトは空文字列 ('')。
+        """
+        if data is None:
+            data = self.data
+
+        if isinstance(data, dict):
+            for key, value in data.items():
+                new_key = f"{parent_key}.{key}" if parent_key else key
+                self._process_nested_data(value, new_key)
+        elif isinstance(data, list):
+            for i, item in enumerate(data):
+                new_key = f"{parent_key}[{i}]"
+                self._process_nested_data(item, new_key)
+        
+        else:
+            # ここで値を処理する。例えば表示するのはデバッグ用
+            print(f"Key: {parent_key} - Value: {data} (Type: {type(data).__name__})")
+
+
+    def cast_data(self, data=None):
+        if data is None:
+            data = self.data  # 初回呼び出しではself.dataを使用
+    
+        if isinstance(data, dict):
+            for key, value in data.items():
+                data[key] = self.cast_data(value)  # 再帰的に型変換
+        
+        elif isinstance(data, list):
+            return [self.cast_data(item) for item in data]  # リストも再帰的に型変換
+        
+        elif isinstance(data, str) and data.isdigit():
+            return int(data)  # 文字列が数字のみなら整数に変換
+            
+        return data
+    
+    
+    def get_save(self, key):
+        if not self.data:
+            print('エラー: JSONファイルが読み込まれていません。')
+            return None  # デフォルト値をNoneにして明示的に問題を示す
+        # 辞書から値を取得してそのまま返す
+        return self.data.get(key)
