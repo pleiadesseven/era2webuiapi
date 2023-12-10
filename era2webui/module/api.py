@@ -10,8 +10,9 @@ async def gen_Image_api(prompt, negative, gen_width, gen_height):
     url = "http://127.0.0.1:7860"
 
     # 生成設定ファイルconfig.jsonのパス
-    t2iconfig_path = os.path.dirname(__file__) + "/config.json"
-
+    base_dir = os.path.dirname(__file__)
+    # カレントディレクトリの親ディレクトリのパスを取得
+    t2iconfig_path = os.path.dirname(base_dir) + "/config.json"
     # config.jsonファイルから生成設定を読み込み
     with open(t2iconfig_path, "r") as file:
         config = json.load(file)
