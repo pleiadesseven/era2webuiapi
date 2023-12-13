@@ -136,30 +136,30 @@ class CSVManager:
         self.csvdatas["cloth.csv"] = transformed_df  # 更新されたDataFrameを保存
 
 
-    def process_csv_data(self, csv_name):
-        """
-        #使ってないかも あとで確認
-        CSVファイルのデータを読み込んでPandas DataFrameに変換し、
-        それを辞書形式にする。
+    # def process_csv_data(self, csv_name):
+    #     """
+    #     #使ってないかも あとで確認
+    #     CSVファイルのデータを読み込んでPandas DataFrameに変換し、
+    #     それを辞書形式にする。
 
-        Args:
-            csv_name (str): 読み込むべきCSVファイルの名前。
+    #     Args:
+    #         csv_name (str): 読み込むべきCSVファイルの名前。
 
-        Returns:
-            dict: CSVデータを辞書形式に変換したもの。
-        """
-        # find_csv_path メソッドを使ってファイルのパスを取得する想定
-        _, file_path = self.find_csv_path(csv_name)
-        if file_path is None:
-            print(f"{csv_name} のPathが見つからないぜ")
-            return None
+    #     Returns:
+    #         dict: CSVデータを辞書形式に変換したもの。
+    #     """
+    #     # find_csv_path メソッドを使ってファイルのパスを取得する想定
+    #     _, file_path = self.find_csv_path(csv_name)
+    #     if file_path is None:
+    #         print(f"{csv_name} のPathが見つからないぜ")
+    #         return None
         
-        try:
-            df = pd.read_csv(file_path)
-            return df.to_dict(orient='index')
-        except FileNotFoundError:
-            print(f"ファイル {file_path} が見つからなかったぜ。")
-            return None
+    #     try:
+    #         df = pd.read_csv(file_path)
+    #         return df.to_dict(orient='index')
+    #     except FileNotFoundError:
+    #         print(f"ファイル {file_path} が見つからなかったぜ。")
+    #         return None
 
 
     def combine_character_csvs(self):
@@ -183,23 +183,27 @@ class CSVManager:
         """
         display_part 辞書に(表示部位:n)のCSVデータを追加
         """
-        cloth_df = self.csvdatas['cloth.csv']
-        display_part_df = self.csvdatas['display_part.csv']
-        # display_partのデータを使ってcloth_dfを更新
-        for index, row in cloth_df.iterrows():
-            # display_part_dfから対応するdisplay_part_noを検索
-            display_part_row = display_part_df[display_part_df['display_part'] == row['表示部位']]
-            if not display_part_row.empty:
-                # display_part_noを取得
-                new_display_part_no = display_part_row.iloc[0]['display_part_no']
+        # cloth.csv と display_part.csv が存在するかチェック
+        if 'cloth.csv' in self.csvdatas and 'display_part.csv' in self.csvdatas:
+            cloth_df = self.csvdatas['cloth.csv']
+            display_part_df = self.csvdatas['display_part.csv']
+            # display_partのデータを使ってcloth_dfを更新
+            for index, row in cloth_df.iterrows():
+                # display_part_dfから対応するdisplay_part_noを検索
+                display_part_row = display_part_df[display_part_df['display_part'] == row['表示部位']]
+                if not display_part_row.empty:
+                    # display_part_noを取得
+                    new_display_part_no = display_part_row.iloc[0]['display_part_no']
 
-                # cloth_dfの両方のカラムに新しい値を設定
-                cloth_df.at[index, 'display_part_no'] = new_display_part_no
-                cloth_df.at[index, '表示部位NO'] = new_display_part_no
+                    # cloth_dfの両方のカラムに新しい値を設定
+                    cloth_df.at[index, 'display_part_no'] = new_display_part_no
+                    cloth_df.at[index, '表示部位NO'] = new_display_part_no
 
-        # 更新されたDataFrameをcsvdatasに再代入
-        self.csvdatas['cloth.csv'] = cloth_df
-
+            # 更新されたDataFrameをcsvdatasに再代入
+            self.csvdatas['cloth.csv'] = cloth_df
+        else:
+            # 必要なファイルがない場合の処理
+            print("ファイルが見つからないから、処理飛ばすぜ。バリアンとによっては関係ない処理だ")
 
     def read_csv(self, csv_name):
         """
@@ -277,16 +281,16 @@ class CSVManager:
             prompt = dataframe.loc[dataframe[key] == value, column].fillna("").values[0]
         except KeyError as e:
             print(f"Error: {csvname}: 指定したキー '{key}' または列 '{column}' で '{value}' が無いぞ。{e}")
-            return "Error"
+            return "ERROR"
         except IndexError as e:
             print(f"Error: {csvname}: 指定したインデックスが範囲外。{e}")
-            return "Error"
+            return "ERROR"
         except pd.errors.DataError as e:
             print(f"Error: {csvname}: データ処理に関するエラー。{e}")
-            return "Error"
+            return "ERROR"
         except Exception as e:
-            print(f"不明な他のエラー: {e}")
-            return "Error"
+            print(f"get_df: 不明な他のエラー: {e}")
+            return "ERROR"
         return prompt
 
 
@@ -311,17 +315,23 @@ class CSVManager:
             # CSVManagerの辞書からデータフレームを取得
             dataframe = pd.DataFrame(self.csvdatas[csvname])
 
-            # keyとvalueおよびsubkeyとsubvalueに一致するレコードをフィルタリングして、指定されたcolumnの値を取得
-            prompt = next((item[column] for item in dataframe if item[key] == value and item[subkey] == subvalue), "")
+            # DataFrameから条件に合致する行を検索し、指定されたcolumnの値を取得
+            filtered_df = dataframe[(dataframe[key] == value) & (dataframe[subkey] == subvalue)]
+            if not filtered_df.empty  and not pd.isna(filtered_df.iloc[0][column]):
+                prompt = filtered_df.iloc[0][column]
+            else:
+                print(f"Error: {csvname}: 条件'{key} = {value}' かつ '{subkey} = {subvalue}' を満たすプロンプトがNaNか見つからなかったぜ")
+                prompt = ""
+
         except KeyError as e:
             print(f"Error: {csvname}: キー'{key}'か'{subkey}'、または列'{column}' で '{value}' が無いぞ。{e}")
-            return "Error"
+            return "ERROR"
         except IndexError as e:
             print(f"Error: {csvname}: 条件'{key} = {value}' かつ '{subkey} = {subvalue}' を満たすデータが見つからなかった - {e}")
-            return "Error"
+            return "ERROR"
         except Exception as e:
-            print(f"予期せぬエラー発生：{e}")
-            return "Error"
+            print(f"get_df_2key:予期せぬエラー発生：{e}")
+            return "ERROR"
 
         # 成功した場合、見つかったプロンプトを返す
         return prompt

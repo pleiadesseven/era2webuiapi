@@ -64,3 +64,5 @@ def get_equip_position(display_part):
         return equip_position_row.iloc[0]['装備部位']
     else:
         return '不明な装備部位'
+
+

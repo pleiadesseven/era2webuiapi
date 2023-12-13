@@ -66,13 +66,17 @@ class SaveJSONHandler:
             return data  # 他の型はそのまま返す
 
 
-    def update_data(self, new_data):
-        """def preceding(order):用
-        クラス dict の更新
-        Args:
-            new_data (dict): どこかで更新されたJSON dict
+    def update_data(self, key, new_value):
         """
-        self.data = new_data
+        指定されたキーに対して新しい値を設定する。
+
+        この関数は self.data 辞書内の特定のキーを更新する。new_value はどんなデータタイプでも良い。
+
+        Args:
+            key (str): 更新するデータのキー。
+            new_value: 新しい値（どんなデータタイプでも可）。
+        """
+        self.data[key] = new_value
 
 
     def get_save(self, key):

@@ -1,7 +1,6 @@
 import configparser
 import random
 import re
-import os
 import time
 from tkinter import filedialog
 

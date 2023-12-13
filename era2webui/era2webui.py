@@ -5,14 +5,12 @@ import requests
 from watchdog.observers.polling import PollingObserver
 from watchdog.events import FileSystemEventHandler
 from module.savedata_handler import SJHFactory
-import json
-import module.sub
 from module.sub import gen_Image
 from module.api import gen_Image_api
 import configparser
 from tkinter import filedialog
-#from eratohoYM.suberatohoYM import promptmaker #YMの場合こちらをインポートする
-from eraTW.suberaTW import promptmaker #TWの場合こちらをインポートする
+from eratohoYM.suberatohoYM import promptmaker #YMの場合こちらをインポートする
+#from eraTW.suberaTW import promptmaker #TWの場合こちらをインポートする
 #from eraImascgpro.subcgpro import promptmaker
 from selenium import webdriver
 import sys
