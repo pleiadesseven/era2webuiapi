@@ -1,4 +1,3 @@
-import csv
 import glob
 import os
 import re
@@ -72,6 +71,8 @@ class CSVManager:
         self.generate_csvlist()
         self.csvdata_import()
         self.combine_character_csvs() #Add_Characterを結合してCharacter.csvとして扱うので必ずself.csvdata_import()の後に呼べ
+        self.add_cloth_columns()
+        self.load_display_part()
 
 
     def generate_csvlist(self):
@@ -105,12 +106,60 @@ class CSVManager:
 
 
     def csvdata_import(self):
-        # ここでcsvlist内のCSVファイルを読み込んでいる
         for csv_name, _ in self.csvlist.items():
-            df = self.read_csv(csv_name)
-            if df is not None:
-                # クラス辞書にDataFrame形式でデータを格納
-                self.csvdatas[csv_name] = df
+            try:
+                df = self.read_csv(csv_name)
+                if df is not None:
+                    # str型で数字が入っているセルをint型に変換する前処理
+                    df = self.convert_str_numbers_to_int(df)
+                    # 全角数字を半角数字に変換する前処理
+                    df = self.convert_fullwidth_to_halfwidth(df)
+                    
+                    self.csvdatas[csv_name] = df
+            except Exception as e:
+                print(f"CSVファイル {csv_name} の読み込み中にエラーが発生したぜ: {e}")
+        print("CSVのDataをCSVManagerのクラス辞書に登録したぜ")
+
+
+    def add_cloth_columns(self):
+        df = self.csvdatas["cloth.csv"]
+        columns_to_copy  = {
+            'class_name': 'カテゴリ',
+            'obj_id': 'カテゴリ内番号',
+            'attribute_name': '衣類名',
+            'equip_position_no': '装備部位',
+            'display_part_no': '表示部位NO',
+            'display_part': '表示部位',
+            # 他のカラム変換もここに追加
+        }
+        transformed_df = self.add_columns_with_copy(df, columns_to_copy)
+        self.csvdatas["cloth.csv"] = transformed_df  # 更新されたDataFrameを保存
+
+
+    def process_csv_data(self, csv_name):
+        """
+        #使ってないかも あとで確認
+        CSVファイルのデータを読み込んでPandas DataFrameに変換し、
+        それを辞書形式にする。
+
+        Args:
+            csv_name (str): 読み込むべきCSVファイルの名前。
+
+        Returns:
+            dict: CSVデータを辞書形式に変換したもの。
+        """
+        # find_csv_path メソッドを使ってファイルのパスを取得する想定
+        _, file_path = self.find_csv_path(csv_name)
+        if file_path is None:
+            print(f"{csv_name} のPathが見つからないぜ")
+            return None
+        
+        try:
+            df = pd.read_csv(file_path)
+            return df.to_dict(orient='index')
+        except FileNotFoundError:
+            print(f"ファイル {file_path} が見つからなかったぜ。")
+            return None
 
 
     def combine_character_csvs(self):
@@ -130,13 +179,33 @@ class CSVManager:
             self.csvdatas['Character.csv'] = combined_df
 
 
+    def load_display_part(self):
+        """
+        display_part 辞書に(表示部位:n)のCSVデータを追加
+        """
+        cloth_df = self.csvdatas['cloth.csv']
+        display_part_df = self.csvdatas['display_part.csv']
+        # display_partのデータを使ってcloth_dfを更新
+        for index, row in cloth_df.iterrows():
+            # display_part_dfから対応するdisplay_part_noを検索
+            display_part_row = display_part_df[display_part_df['display_part'] == row['表示部位']]
+            if not display_part_row.empty:
+                # display_part_noを取得
+                new_display_part_no = display_part_row.iloc[0]['display_part_no']
+
+                # cloth_dfの両方のカラムに新しい値を設定
+                cloth_df.at[index, 'display_part_no'] = new_display_part_no
+                cloth_df.at[index, '表示部位NO'] = new_display_part_no
+
+        # 更新されたDataFrameをcsvdatasに再代入
+        self.csvdatas['cloth.csv'] = cloth_df
+
+
     def read_csv(self, csv_name):
         """
         CSVファイル名からPandas DataFrameを読み込んで返す。
-
         Args:
             csv_name (str): 読み込むCSVファイルの名前。
-
         Returns:
             DataFrame: CSVから読み込んだデータを含むPandasのDataFrame、
                         またはCSVファイルが見つからない場合はNone。
@@ -179,31 +248,6 @@ class CSVManager:
         return None, None
 
 
-    def process_csv_data(self, csv_name):
-        """
-        CSVファイルのデータを読み込んでPandas DataFrameに変換し、
-        それを辞書形式にする。
-
-        Args:
-            csv_name (str): 読み込むべきCSVファイルの名前。
-
-        Returns:
-            dict: CSVデータを辞書形式に変換したもの。
-        """
-        # find_csv_path メソッドを使ってファイルのパスを取得する想定
-        _, file_path = self.find_csv_path(csv_name)
-        if file_path is None:
-            print(f"{csv_name} のPathが見つからないぜ")
-            return None
-        
-        try:
-            df = pd.read_csv(file_path)
-            return df.to_dict(orient='index')
-        except FileNotFoundError:
-            print(f"ファイル {file_path} が見つからなかったぜ。")
-            return None
-
-
     def get_df(self, csvname, key, value, column):
         """
         気になる辞書データの要素を拾い出すにはこのメソッドを使うんだぜ｡。
@@ -227,7 +271,8 @@ class CSVManager:
         try:
             # CSVManagerの辞書からデータフレームを取得
             dataframe = pd.DataFrame(self.csvdatas[csvname])
-            
+            # pd.set_option('display.max_columns', 50)
+            # print(dataframe)
             # データフレームから値を取得
             prompt = dataframe.loc[dataframe[key] == value, column].fillna("").values[0]
         except KeyError as e:
@@ -281,27 +326,6 @@ class CSVManager:
         # 成功した場合、見つかったプロンプトを返す
         return prompt
 
-    def add_csv(self, csvname1, csvname2):
-        """
-        2つの辞書を結合して、連番キーを持つ新しい辞書を作成するメソッドだ。
-        元の辞書のキーは無視して、新しい単一の辞書で連番のキーを割り当てるぞ。
-
-        Args:
-            dict1 (dict): 結合する最初の辞書。
-            dict2 (dict): 結合する2番目の辞書。
-
-        Returns:
-            dict: 連番キーを持つ新しい辞書。
-
-        注意:
-            元の辞書のキーは使用せず、新しい辞書は連番のキーにする。
-        """
-        data1 = self.read_csv(csvname1)
-        data2 = self.read_csv(csvname2)
-        combined_dict = data1.copy()  # dict1の内容をコピー
-        combined_dict.update(data2)  # dict2の内容を組み込む
-        return combined_dict
-
 
     def chikan(self, text):
         """置換機能
@@ -325,40 +349,79 @@ class CSVManager:
         return text
 
 
-    # DictをCSVに出力する
-    def write_dict_to_csv(self, file_name, data_dict, headers=None, is_nested_dict=True):
+    def write_specific_df_to_csv(self, file_name, csv_name):
         """
-        辞書を渡すと、その内容をCSVファイルに転写してくれる便利な機能だ。
-        わたしたちが蓄えてきたデータの宝庫を、世の中に分かち合うためには欠かせない手順さ。
-
-        ネストされた辞書かどうかを指定することもできるし、ヘッダーを自分で設定したいときは
-        それもできるぜ。キーと値のペアを、ずらりと並んだCSVファイルにするんだ。
+        特定のDataFrameをCSVに書き出す。
 
         Args:
-            file_name (str): 書き込みたいCSVファイルの名前だ。
-            data_dict (dict): CSVに変換される辞書。ネストしてもいいし、シンプルなものでもOK。
-            headers (list[str], optional): CSVのヘッダーを明示的に指定する場合に使う。指定がなければ辞書から自動生成される。
-            is_nested_dict (bool, optional): 渡される辞書がネストされた構造かどうか。デフォルトはTrue。
+            file_name (str): 書き込みたいCSVファイルの名前。
+            csv_name (str): self.csvdatasから取得するDataFrameのキー。
 
         Returns:
             None: ファイルに書き込みを完了したら、特に何も返さない。
         """
-        with open(file_name, 'w', newline='', encoding='utf-8') as file:
-            writer = csv.writer(file)
-            if headers:
-                writer.writerow(headers)
-            else:
-                # ネストされた辞書の場合、最初の要素からヘッダーを取得する
-                if is_nested_dict and data_dict:
-                    headers = ['Key'] + \
-                        list(data_dict[next(iter(data_dict))].keys())
-                    writer.writerow(headers)
+        df = self.csvdatas[csv_name]  # 特定のDataFrameを取得
+        df.to_csv(file_name, index=False, encoding='utf-8-sig')
 
-            for key, value in data_dict.items():
-                if is_nested_dict:
-                    # ネストされた辞書の場合、値からリストを作成する
-                    row = [key] + [value.get(header) for header in headers[1:]]
-                else:
-                    # ネストされていない辞書（キーと単一の値）の場合
-                    row = [key, value]
-                writer.writerow(row)
+
+    #CSVM補助用メソッド類
+    #あとで見直す 他のクラスにまとめるかも
+    def convert_str_numbers_to_int(self, df):
+        """数字だけのセルをstrからintに変換
+
+        Args:
+            df (_type_): _description_
+            column_name (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        for column in df.columns:
+            df[column] = df[column].apply(lambda x: int(x) if isinstance(x, str) and x.isdigit() else x)
+        return df
+
+    def convert_fullwidth_to_halfwidth(self, df):
+        """全角数字を半角に変換
+
+        Args:
+            df (_type_): _description_
+            column_name (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        for column in df.columns:
+            df[column] = df[column].apply(lambda x: x.translate(str.maketrans('０１２３４５６７８９', '0123456789')) if isinstance(x, str) else x)
+        return df
+
+
+    def add_transformed_columns(self, df, column_transformations):
+        """
+        DataFrameに複数の変換されたカラムを追加する。
+
+        Args:
+            df (pandas.DataFrame): 変換する対象のDataFrame
+            column_transformations (dict): {新しいカラム名: (元のカラム名, 変換関数)} の辞書
+
+        Returns:
+            pandas.DataFrame: 変換後のカラムが追加されたDataFrame
+        """
+        for new_column, (original_column, transform_function) in column_transformations.items():
+            df[new_column] = df[original_column].apply(transform_function)
+        return df
+
+
+    def add_columns_with_copy(self, df, columns_to_copy):
+        """
+        既存のカラムの値をコピーして新しいカラムに追加する。
+
+        Args:
+            df (pandas.DataFrame): 対象のDataFrame
+            columns_to_copy (dict): {新しいカラム名: 既存のカラム名} の辞書
+
+        Returns:
+            pandas.DataFrame: 値がコピーされた新しいカラムが追加されたDataFrame
+        """
+        for new_column, original_column in columns_to_copy.items():
+            df[new_column] = df[original_column]
+        return df

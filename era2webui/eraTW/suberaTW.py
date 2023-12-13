@@ -1,49 +1,56 @@
 import pandas as pd
-import os
 from eraTW.emo import Expression
 import re
 from module.sub import get_width_and_height
 
 from module.csv_manager import CSVMFactory
 csvm = CSVMFactory.get_instance()
+from eraTW.existobj import ObjExistenceManager, get_str
+
 
 # order自体を変化させる前処理
 # たとえば
 # 条件によりコマンド差し替え（乳サイズでパイズリ→ナイズリ
 # キャラ差し替え　EXフラグが立っていたらEXキャラ用の名前に変更する
 # など
-def preceding(order):
-    Nパイズリ = "82"
-    Nナイズリ = "701" #存在しないコマンド番号。
-    N胸愛撫 = "6"
-    N着衣胸愛撫 = "702" #存在しないコマンド番号。
 
-    comNo = str(order["コマンド"])
+def preceding(sjh):
+    #SaveJSONHandlerにしまわれたJSONの値は int
+    Nパイズリ = 82
+    Nナイズリ = 701 #存在しないコマンド番号。
+    N胸愛撫 = 6
+    N着衣胸愛撫 = 702 #存在しないコマンド番号。
+
+
+    comNo = sjh.get_save("コマンド")
 
     # 巨乳未満のキャラのパイズリはナイズリに変更
     # (ちんちんが隠れてしまうような描写は普乳を逸脱しているため)
-    if not (("巨乳" in order["talent"]) or ("爆乳" in order["talent"])):
+    if not (("巨乳" in sjh.get_save("talent")) or ("爆乳" in sjh.get_save("talent"))):
         if comNo == Nパイズリ:
             comNo = Nナイズリ
 
     # 着衣時の胸愛撫はCHAKUMOMIのLoraを適用
     # キャラLoraと相性よくないみたいでつらい
-    if order["上半身着衣状況"] != 0:
+    if sjh.get_save("上半身着衣状況") != 0:
         if comNo == N胸愛撫:
             comNo = N着衣胸愛撫
 
 
-    order["コマンド"] = comNo
-
-    return order
+    # 既存のデータを取得
+    current_data = sjh.data
+    # 特定のキーの値を更新
+    current_data["コマンド"] = comNo
+    # 更新されたデータで data 属性を更新
+    sjh.update_data(current_data)
+    return sjh
 
 
 # orderをもとにプロンプトを整形する関数
-def promptmaker(order):
+def promptmaker(sjh):  
+    # SaveJSONHandler の class dict の更新 コマンドが変われば解像度の変化もありえる
+    sjh = preceding(sjh)
     
-    # orderを変化させる事前処理 コマンドが変われば解像度の変化もありえる
-    order = preceding(order)
-
     kaizoudo = ""
     gen_width = 0
     gen_height = 0
@@ -53,7 +60,7 @@ def promptmaker(order):
 
     flags = {"drawchara":0,"drawface":0,"drawbreasts":0,"drawvagina":0,"drawanus":0}
 
-    # Effect.csvとEvent.csvを読みこんでおく
+    # Effect.csvとEvent.csvは起動時に読み込んだ
     csv_efc = 'Effect.csv'
     csv_eve = 'Event.csv'
 
@@ -63,8 +70,8 @@ def promptmaker(order):
     #シーン分岐
 
     #場所とキャラを描写する
-    if order["scene"] == "ターゲット切替" or order["scene"] == "マスター移動":
-        if order["キャラ固有番号"] == 0:
+    if sjh.get_save("scene") == "ターゲット切替" or sjh.get_save("scene") == "マスター移動":
+        if sjh.get_save("キャラ固有番号") == 0:
             # targetがいないとき
             prompt += "(empty scene),"
             negative += "(1girl:1.5),"
@@ -75,17 +82,17 @@ def promptmaker(order):
             flags["drawface"] = 1
             
         #ロケーション
-        p,n = get_location(order)
+        p,n = get_location(sjh)
         prompt += p
         negative += n
 
 
     #ここからTRAIN コマンド実行時の絵
-    if order["scene"] == "TRAIN":
+    if sjh.get_save("scene") == "TRAIN":
         csv_tra = 'Train.csv'
 
         # TRAINNAME関数はないと思い込んでいたので番号で処理している
-        comNo = str(order["コマンド"])
+        comNo = sjh.get_save("コマンド")
 
         # 体位から読み取ったキャラ描画、顔描画、胸描画のフラグ（0か1が入る)
         flags["drawchara"] =  csvm.get_df(csv_tra,"コマンド番号",comNo,"キャラ描画")
@@ -109,15 +116,16 @@ def promptmaker(order):
             flags["drawanus"] = csvm.get_df(csv_eve,"名称","汎用調教","アナル描画")
 
         else:
-            # cgpro コマンド成否で分岐はめんどいので実装しない
-            # 現状だとソース変動があるときにしか画像表示関数は呼ばれない
-            order["success"] = 1 # 必ず成功
+            # # cgpro コマンド成否で分岐はめんどいので実装しない
+            # # 現状だとソース変動があるときにしか画像表示関数は呼ばれない
+            #機能してないのであとで直す
+            # sjh.get_save("success") == 1 # 必ず成功
 
             deny = csvm.get_df(csv_tra,"コマンド番号",comNo,"拒否プロンプト")
             if deny == "":
                 #拒否プロンプトが空なら成否判定なしと判断、通常プロンプトを出力する
                 chk_success = True
-            elif order["success"] == 1:
+            elif sjh.get_save("success") == 1:
                 #判定に成功した
                 chk_success = True
             else:
@@ -136,19 +144,19 @@ def promptmaker(order):
                 negative += ","
 
         # 付着した精液
-        # prompt += stain(order,flags)
+        # prompt += stain(sjh,flags)
         #装備 調教対象キャラが映るときのみ
         if flags["drawchara"] == 1:
-            p,n = equipment(order,flags)
+            p,n = equipment(sjh,flags)
             prompt += p
             negative += n
         #ロケーション
-        p,n = get_location(order)
+        p,n = get_location(sjh)
         prompt += p
         negative += n
 
         #解像度
-        kaizoudo = get_kaizoudo(order)
+        kaizoudo = get_kaizoudo(sjh)
 
 
     #キャラ描写
@@ -158,7 +166,7 @@ def promptmaker(order):
         # prompt += "BREAK,"
 
         # キャラ描写の前に衣服
-        p,n = clothing(order,flags)
+        p,n = clothing(sjh,flags)
         prompt += p
         negative += n
 
@@ -174,7 +182,7 @@ def promptmaker(order):
             negative += csvm.get_df(csv_cha,"キャラ名","描画キャラ上書き","ネガティブ") + ","
         else:
             #割り込みがなければ通常のキャラプロンプト読み込み処理
-            chaName = order["target"]
+            chaName = sjh.get_save("target")
             prompt += "\(" + csvm.get_df(csv_cha,"キャラ名",chaName,"プロンプト") + ":" + str(csvm.get_df(csv_cha,"キャラ名",chaName,"プロンプト強調")) + "\),"
             prompt += "\(" + csvm.get_df(csv_cha,"キャラ名",chaName,"プロンプト2") + "\),"
             prompt += csvm.get_df(csv_cha,"キャラ名",chaName,"キャラLora") + ","
@@ -183,81 +191,80 @@ def promptmaker(order):
 
 
         # エフェクト等 TFLAGは調教終了時には初期化されない。TRAINに限定しないと料理中に射精とかが起こる
-        if order["scene"] == "TRAIN":
+        if sjh.get_save("scene") == "TRAIN":
             #射精
-            prompt += cumshot(order)
+            prompt += cumshot(sjh)
         
             # ヴァギナ描画onのとき
             if flags["drawvagina"] == 1:
                 # 潤滑によるpussy juice
-                if order["palam"]["潤滑"] < 200:
+                if sjh.get_save("palam")["潤滑"] < 200:
                     negative += "pussy juice,"
-                elif order["palam"]["潤滑"] in range(1000,2500):
+                elif sjh.get_save("palam")["潤滑"] in range(1000,2500):
                     prompt += "pussy juice,"
-                elif order["palam"]["潤滑"] in range(2500,5000):
+                elif sjh.get_save("palam")["潤滑"] in range(2500,5000):
                     prompt += "dripping pussy juice,"
                 else:
                     prompt += "(dripping pussy juice),"
                 # 破瓜の血       
-                # if order["処女喪失"] > 0:
+                # if sjh.get_save("処女喪失"] > 0:
                     # prompt += csvm.get_df(csv_efc,"名称","処女喪失","プロンプト") + ","
-                # if order["今回の調教で処女喪失"] > 0:
+                # if sjh.get_save("今回の調教で処女喪失"] > 0:
                     # prompt += csvm.get_df(csv_efc,"名称","今回の調教で処女喪失","プロンプト") + ","            
-                if order["放尿"] > 0:
+                if sjh.get_save("放尿") > 0:
                         prompt += csvm.get_df(csv_efc,"名称","放尿","プロンプト") + ","
             if flags["drawbreasts"]:
-                if order["噴乳"] > 0:
+                if sjh.get_save("噴乳") > 0:
                     prompt += csvm.get_df(csv_efc,"名称","噴乳","プロンプト") + ","
             # ここまでTRAIN限定のエフェクト
         
-        if "妊娠" in order["talent"]:
+        if "妊娠" in sjh.get_save("talent"):
             # 標準で20日で出産する。残14日から描写し、残8日でさらに進行
-            if (order["出産日"] - order["日付"]) in range(8,14):
+            if (sjh.get_save("出産日") - sjh.get_save("日付")) in range(8,14):
                 prompt += csvm.get_df(csv_efc,"名称","妊娠中期","プロンプト") + ","
-            elif (order["出産日"] - order["日付"]) <= 8:
+            elif (sjh.get_save("出産日") - sjh.get_save("日付")) <= 8:
                 prompt += csvm.get_df(csv_efc,"名称","妊娠後期","プロンプト") + ","
 
         #乳サイズ、体型の関数を呼び出す
-        p,n = body_shape(order,flags)
+        p,n = body_shape(sjh,flags)
         prompt += p
         negative += n
 
         #髪色の関数 ※3000番台の名無しキャラ、および息子(2048)と娘(2049)のみ
-        # if (order["キャラ固有番号"] in range(3000,4000)) or (order["キャラ固有番号"] in (2048,2049)):
-        #     prompt += haircolor(order)
+        # if (sjh.get_save("キャラ固有番号") in range(3000,4000)) or (sjh.get_save("キャラ固有番号") in (2048,2049)):
+        #     prompt += haircolor(sjh)
 
         #髪型の関数
-        # p,n = hairstyle(order)
+        # p,n = hairstyle(sjh)
         # prompt += p
         # negative += n        
 
         #目の色をorderに追記しておく(Expression関数でclosed eyesの判定をした後に反映する)
-        order["eyecolor"] = csvm.get_df(csv_cha,"キャラ名",order["target"],"目の色")
+        sjh.get_save("eyecolor") == csvm.get_df(csv_cha,"キャラ名",sjh.get_save("target"),"目の色")
 
         #表情ブレンダー
-        p,n = Expression(order,flags)
+        p,n = Expression(sjh,flags)
         prompt += p
         negative += n
     #ここまでキャラ描画フラグがonのときの処理
 
 
-
     # 昼夜の表現
         # やたらと夜景や黄昏時を出したがるので強めにネガ
         # 屋外なら青空とかを書きたいが分岐が面倒くさい
-        if order["時間"] in range(0,360):
+        if sjh.get_save("時間") in range(0,360):
             prompt += "at night,"
             negative += "(blue sky,twilight:1.3),"
-        elif order["時間"] in range(360,720):
+        elif sjh.get_save("時間") in range(360,720):
             prompt += "day,"
             negative += "(night sky,night scene,twilight:1.3),"
-        elif order["時間"] in range(720,1060):
+        elif sjh.get_save("時間") in range(720,1060):
             prompt += "day,"
             negative += "(night sky,night scene,twilight:1.3),"
-        elif order["時間"] in range(1060,1150):
+        elif sjh.get_save("時間") in range(1060,1150):
             prompt += "in the twilight,"
             negative += "(blue sky:1.3),"
-        elif order["時間"] >= 1150:
+        elif sjh.get_save("時間") >= 1150:
             prompt += "at night,"
             negative += "(blue sky,twilight:1.3),"
 
@@ -285,7 +292,7 @@ def promptmaker(order):
 
 # 体型素質
 # 一致する素質を持っていればTalent.csvに書かれたプロンプトを記入
-def body_shape (order,flags):
+def body_shape (sjh,flags):
     prompt = ""
     negative = ""
     csv_tal = 'Talent.csv'
@@ -296,38 +303,38 @@ def body_shape (order,flags):
     if flags["drawbreasts"] == 1:
         talents = ["絶壁","貧乳","巨乳","爆乳"]
         for tal in talents:
-            if tal in order["talent"]:
+            if tal in sjh.get_save("talent"):
                 prompt += csvm.get_df(csv_tal,"名称",tal,"プロンプト") + ","
                 negative += csvm.get_df(csv_tal,"名称",tal,"ネガティブ") + ","
 
     # 体格、体型
     talents = ["小人体型","巨躯","小柄体型","ぽっちゃり","ムチムチ","スレンダー","がりがり"]
     for tal in talents:
-        if tal in order["talent"]:
+        if tal in sjh.get_save("talent"):
             prompt += csvm.get_df(csv_tal,"名称",tal,"プロンプト") + ","
             negative += csvm.get_df(csv_tal,"名称",tal,"ネガティブ") + ","
 
     # 胸愛撫など、普通乳なのに巨乳に描かれがちなコマンドのときプロンプトにsmall breastsを付加する
     chk_list = ["爆乳","巨乳","貧乳","絶壁"]
-    and_list = set(order['talent']) & set(chk_list)
+    and_list = set(sjh.get_save('talent')) & set(chk_list)
     # リストに一致しないとき即ち普通乳のとき
     if (len(and_list)) == 0:
         # 胸愛撫、ぱふぱふ、後背位胸愛撫
-        if str(order["コマンド"]) in ("6","606","702"):
+        if str(sjh.get_save("コマンド")) in ("6","606","702"):
             prompt += "small breasts,"
 
 
     return prompt,negative
 
 # 髪色
-# def haircolor(order):
+# def haircolor(sjh):
 #     csvfile_path= csvm.find_csv_path('Talent.csv')
 #     csv_tal = pd.read_csv(filepath_or_buffer=csvfile_path)
 #     prompt = ""
 #     negative = ""
-#     talents = ["黒髪","栗毛","金髪","赤毛","銀髪","青髪","緑髪","ピンク髪","紫髪","白髪","オレンジ髪","水色髪","灰髪"]
+#     talents = ["黒髪","栗毛","金髪","赤毛","銀髪","青髪","緑髪","ピンク髪","紫髪","白髪","オレンジ髪","水色髪","灰髪")
 #     for tal in talents:
-#         if tal in order["talent"]:
+#         if tal in sjh.get_save("talent"):
 #             # csvには色だけ書いてるのでhairをつける
 #             prompt += csvm.get_df(csv_tal,"名称",tal,"プロンプト") + " hair,"
 #             negative += csvm.get_df(csv_tal,"名称",tal,"ネガティブ") + " hair,"
@@ -335,20 +342,20 @@ def body_shape (order,flags):
 
 
 # 髪型 
-def hairstyle(order):
+def hairstyle(sjh):
     csv_tal = 'Talent.csv'
     prompt = ""
     negative = ""
     talents = ["長髪","セミロング","ショートカット","ポニーテール","ツインテール","サイドテール","縦ロール","ツインリング","三つ編み","短髪","おさげ髪","ポンパドール","ポニーアップ","サイドダウン","お団子髪","ツーサイドアップ","ダブルポニー","横ロール","まとめ髪","ボブカット","シニヨン","ロングヘア"]
     for tal in talents:
-        if tal in order["talent"]:
+        if tal in sjh.get_save("talent"):
             prompt += csvm.get_df(csv_tal,"名称",tal,"プロンプト") + ","
             negative += csvm.get_df(csv_tal,"名称",tal,"ネガティブ") + ","
     return prompt,negative
 
 # 一時装備､SEXTOY､状況による変化
 # CSVを2列で検索する
-def equipment(order,flags):
+def equipment(sjh,flags):
     prompt = ""
     negative = ""
     csv_equ = 'Equip.csv'
@@ -356,7 +363,7 @@ def equipment(order,flags):
     N膣装備 = ["11","12","13","22"]
     Nアナル装備 = ["14","15","23"]    
     # 存在するすべてのequipについて繰り返す
-    for key,value in order["equip"].items():
+    for key,value in sjh.get_save("equip").items():
         # 構図による装備品のスキップ
         if key in N膣装備:
             print("v")
@@ -379,23 +386,23 @@ def equipment(order,flags):
     return prompt,negative
 
 #ロケーション
-def get_location(order):
+def get_location(sjh):
     prompt = ""
     negative = ""
 
     # 700箇所
     csv_loc = 'Location.csv'
     
-    prompt += csvm.get_df(csv_loc,"場所ID",order["CFLAG:MASTER:現在位置"],"プロンプト")
+    prompt += csvm.get_df(csv_loc,"場所ID",sjh.get_save("CFLAG:MASTER:現在位置"),"プロンプト")
     prompt += ","
-    negative += csvm.get_df(csv_loc,"場所ID",order["CFLAG:MASTER:現在位置"],"ネガティブ")
+    negative += csvm.get_df(csv_loc,"場所ID",sjh.get_save("CFLAG:MASTER:現在位置"),"ネガティブ")
     negative += ","
 
     return prompt, negative
 
 # 射精
-def cumshot(order):
-    射精箇所 = order["射精箇所"]
+def cumshot(sjh):
+    射精箇所 = sjh.get_save("射精箇所")
     prompt = ""
     #ビット　1=膣内 2=アナル 3=手淫 4=口淫 5=パイズリ 6=素股 7=足コキ 8=体表 9=アナル奉仕
 
@@ -422,7 +429,7 @@ def cumshot(order):
         csvfile_path= csvm.find_csv_path('Effect.csv')
         csv_efc = pd.read_csv(filepath_or_buffer=csvfile_path)
 
-        if order["MASTER射精量"] <= 1:
+        if sjh.get_save("MASTER射精量") <= 1:
             prompt += csvm.get_df(csv_efc,"名称","主人が射精","プロンプト") + ","
         else:
             prompt += csvm.get_df(csv_efc,"名称","主人が大量射精","プロンプト") + ","
@@ -430,15 +437,15 @@ def cumshot(order):
     return prompt
 
 #汚れ
-def stain(order,flags):
+def stain(sjh,flags):
     prompt = ""
-    # if ((order["髪の汚れ"] & 4)  == 4):
+    # if ((sjh.get_save("髪の汚れ") & 4)  == 4):
     #     prompt += "(facial,bukkake:1.2),"
     if flags["drawbreasts"] == 1:
-        if (order["胸の汚れ"] & 4)  == 4:
+        if (sjh.get_save("胸の汚れ") & 4)  == 4:
             prompt += "(cum on breasts),"
     if flags["drawvagina"] == 1:
-        if (order["膣内射精フラグ"]) >= 1:
+        if (sjh.get_save("膣内射精フラグ")) >= 1:
             prompt += "cum drip from pussy,"
     return prompt
 # cum on ～ はちんちんを誘発、semen on ～ はほとんど効果がない
@@ -447,20 +454,20 @@ def stain(order,flags):
 
 # 解像度をcsvから読む
 # シーン分岐ごとに読む
-def get_kaizoudo(order):
+def get_kaizoudo(sjh):
     # TRAINとその他のEVENTで読み取るcsvが異なる
-    if order["scene"] == "TRAIN":
+    if sjh.get_save("scene") == "TRAIN":
         csvfile = 'Train.csv'
-        kaizoudo = str(csvm.get_df(csvfile,"コマンド番号",str(order["コマンド"]),"解像度"))
+        kaizoudo = str(csvm.get_df(csvfile,"コマンド番号",str(sjh.get_save("コマンド")),"解像度"))
     else:
         csvfile_path= csvm.find_csv_path('Event.csv')
         csvfile = pd.read_csv(filepath_or_buffer=csvfile_path)
-        kaizoudo = str(csvm.get_df(csvfile,"名称",str(order["scene"]),"解像度"))
+        kaizoudo = str(csvm.get_df(csvfile,"名称",str(sjh.get_save("scene")),"解像度"))
         
     return kaizoudo
 
 # 服装
-def clothing(order,flags):
+def clothing(sjh, flags):
     prompt = ""
     negative = ""
     csv_clo = 'Cloth.csv'
@@ -480,7 +487,7 @@ def clothing(order,flags):
     下半身はだけフラグ = 0 #スカート着衣のまま中身を見せるコマンド用
 
     # 下半身はだけ　クンニ、秘貝開帳、自慰、ローター、Eマッサージャ、クリキャップ、バイブ、アナルバイブ、アナルビーズ、正常位、後背位、正常位アナル、後背位アナル、逆レイプ、騎乗位、騎乗位アナル、対面座位、背面座位、対面座位アナル、背面座位アナル、二穴挿し、素股、スパンキング、
-    if order["コマンド"] in ["1","8","9","40","41","42","44","45","46","60","61","62","63","64","65","66","67","68","69","70","71","72","83","100"]:
+    if sjh.get_save("コマンド") in ["1","8","9","40","41","42","44","45","46","60","61","62","63","64","65","66","67","68","69","70","71","72","83","100"]:
         下半身はだけフラグ = 1
 
     # 下着1（貞操帯、絆創膏、ニプレス）は未実装
@@ -488,26 +495,26 @@ def clothing(order,flags):
 
     # ブラ露出判定
     # 上着が0枚 or 上着1枚かつ脱衣中 に露出フラグが立つ。ノーブラの判定はあとでやる
-    if 上半身上着重ね着数(order) == 0 or (上半身上着重ね着数(order) == 1 and order["コマンド"] == N上半身脱衣_上着):
+    if 上半身上着重ね着数(sjh) == 0 or (上半身上着重ね着数(sjh) == 1 and sjh.get_save("コマンド") == N上半身脱衣_上着):
         ブラ露出フラグ = 1
     elif 上半身はだけフラグ == 1:
         ブラ露出フラグ = 1
     
     # パンツ露出判定　ブラと同様
-    if 下半身上着重ね着数(order) == 0 or (下半身上着重ね着数(order) == 1 and order["コマンド"] == N下半身脱衣_上着):
+    if 下半身上着重ね着数(sjh) == 0 or (下半身上着重ね着数(sjh) == 1 and sjh.get_save("コマンド") == N下半身脱衣_上着):
         パンツ露出フラグ = 1 
     elif 下半身はだけフラグ == 1:
         パンツ露出フラグ = 1
     
     # 乳露出判定
     # 着てない or ブラのみの状態から脱ぐ、または元々ノーブラの状態でブラが見える条件を満たす
-    if order["上半身着衣状況"] == 0 or (上半身上着重ね着数(order) == 0 and order["コマンド"] == N上半身脱衣_下着) or (order["上半身下着2"] == 0 and ブラ露出フラグ == 1):
+    if sjh.get_save("上半身着衣状況") == 0 or (上半身上着重ね着数(sjh) == 0 and sjh.get_save("コマンド") == N上半身脱衣_下着) or (sjh.get_save("上半身下着2") == 0 and ブラ露出フラグ == 1):
         ブラ露出フラグ = 0
         乳露出フラグ = 1
 
     # 秘部露出判定
     # なにも履いてない or パンツだけ履いてるのを脱ぐ、または元々ノーパンの状態でパンツが見える条件を満たす
-    if order["下半身着衣状況"] == 0 or (下半身上着重ね着数(order) == 0 and order["コマンド"] == N下半身脱衣_下着) or (order["下半身下着2"] == 0 and パンツ露出フラグ == 1):
+    if sjh.get_save("下半身着衣状況") == 0 or (下半身上着重ね着数(sjh) == 0 and sjh.get_save("コマンド") == N下半身脱衣_下着) or (sjh.get_save("下半身下着2") == 0 and パンツ露出フラグ == 1):
         パンツ露出フラグ = 0 
         秘部露出フラグ = 1
     
@@ -524,44 +531,45 @@ def clothing(order,flags):
 
     # 上着描写
     # 上半身上着
-    if (ブラ露出フラグ == 0 and 乳露出フラグ == 0) or 上半身はだけフラグ == 1:
+    if (sjh.get_save("下半身下着表示フラグ") == 0 and 乳露出フラグ == 0) or sjh.get_save("上半身はだけ状態") == 1:
         clothings = ["上半身上着1","上半身上着2","ボディースーツ","ワンピース","着物","レオタード"]
         for clo in clothings:
-            clothName= str(order[clo])
-            if order[clo] != 0:
+            clothName= sjh.get_save(clo)
+            if sjh.get_save(clo) != 0:
                 prompt += "(wearing " + " " + csvm.get_df(csv_clo,"衣類名",clothName,"プロンプト") + ":1.3),"
                 negative += csvm.get_df(csv_clo,"衣類名",clothName,"ネガティブ") + ","
 
     # 下半身上着
-    if (パンツ露出フラグ == 0 and 秘部露出フラグ == 0) or 下半身はだけフラグ == 1:
+    if (パンツ露出フラグ == 0 and 秘部露出フラグ == 0) or sjh.get_save("下半身ずらし状態") == 1:
         clothings = ["下半身上着1","下半身上着2","スカート"]
         for clo in clothings:
-            clothName = str(order[clo])
-            if order[clo] != 0:
+            clothName = str(sjh.get_save(clo))
+            if sjh.get_save(clo) != 0:
                 prompt += "(wearing " + " " + csvm.get_df(csv_clo,"衣類名",clothName,"プロンプト") + ":1.3),"
                 negative += csvm.get_df(csv_clo,"衣類名",clothName,"ネガティブ") + ","
 
 
     if ブラ露出フラグ == 1:
-        if order["上半身下着2"] != 0:
-            prompt += "(wearing " + " " + csvm.get_df(csv_clo,"衣類名",str(order["上半身下着2"]),"プロンプト") + ":1.3),"
+        if sjh.get_save("上半身下着2") != 0:
+            prompt += "(wearing " + " " + csvm.get_df(csv_clo,"衣類名",str(sjh.get_save("上半身下着2")),"プロンプト") + ":1.3),"
 
     if パンツ露出フラグ == 1:
-        if order["下半身下着2"] != 0:
+        if sjh.get_save("下半身下着2") != 0:
             # パンツの種類は未対応
+            
             prompt += "(wearing " + " panties:1.3),"
 
     # panty aside
     # 挿入とクンニ
-    if (order["マスターがＶ挿入"] != 0 )or(order["マスターがＡ挿入"] != 0) or (order["コマンド"] == "1"):
-        if order["下半身下着2"] != 0:
+    if (sjh.get_save("マスターがＶ挿入") != 0 )or(sjh.get_save("マスターがＡ挿入") != 0) or (sjh.get_save("コマンド") == "1"):
+        if sjh.get_save("下半身下着2") != 0:
             prompt += "(naked pussy, pantie aside),"
 
     return prompt,negative
 
 
-def 上半身上着重ね着数(order):
-    return ((order["上半身上着1"] != 0) + (order["上半身上着2"] != 0) + (order["ボディースーツ"] != 0) + (order["ワンピース"] != 0) + (order["着物"] != 0) + (order["レオタード"] != 0))
+def 上半身上着重ね着数(sjh):
+    return ((sjh.get_save("上半身上着1") != 0) + (sjh.get_save("上半身上着2") != 0) + (sjh.get_save("ボディースーツ") != 0) + (sjh.get_save("ワンピース") != 0) + (sjh.get_save("着物") != 0) + (sjh.get_save("レオタード") != 0))
 
-def 下半身上着重ね着数(order):
-    return ((order["下半身上着1"] != 0) + (order["下半身上着2"] != 0) + (order["スカート"] != 0) + (order["ボディースーツ"] != 0) + (order["ワンピース"] + order["着物"] != 0) + (order["レオタード"] != 0))
+def 下半身上着重ね着数(sjh):
+    return ((sjh.get_save("下半身上着1") != 0) + (sjh.get_save("下半身上着2") != 0) + (sjh.get_save("スカート") != 0) + (sjh.get_save("ボディースーツ") != 0) + (sjh.get_save("ワンピース") + sjh.get_save("着物") != 0) + (sjh.get_save("レオタード") != 0))

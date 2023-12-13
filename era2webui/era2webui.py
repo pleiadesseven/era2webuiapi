@@ -4,10 +4,11 @@ import time
 import requests
 from watchdog.observers.polling import PollingObserver
 from watchdog.events import FileSystemEventHandler
+from module.savedata_handler import SJHFactory
 import json
-import sub
-from sub import gen_Image
-from api import gen_Image_api
+import module.sub
+from module.sub import gen_Image
+from module.api import gen_Image_api
 import configparser
 from tkinter import filedialog
 #from eratohoYM.suberatohoYM import promptmaker #YMの場合こちらをインポートする
@@ -17,15 +18,22 @@ from selenium import webdriver
 import sys
 
 class FileHandler(FileSystemEventHandler):
+    """受け取る引数 order_queue は list
+
+    Args:
+        FileSystemEventHandler (_type_): _description_
+    """
     def __init__(self, queue):
         super().__init__()
         self.queue = queue
-
+        
+    
     # 作成と変更は同じ処理
     def on_created(self, event):
         self.handle_event(event)
     def on_modified(self, event):
         self.handle_event(event)
+
 
     def handle_event(self, event):
         if not event.is_directory and event.src_path.endswith('.txt'):
@@ -36,31 +44,30 @@ class FileHandler(FileSystemEventHandler):
         print("\ntxt検知")
 
         # 文字コードはeraの出力の時点でUTF-8(BOM付)にする。ERB中、SAVETEXTの第4引数を1にすればいい。
-        with open(event.src_path, 'r', encoding='utf-8_sig') as f:
-            try:
-                # ファイルをjsonとして読み込む
-                content = json.load(f)
-            except json.decoder.JSONDecodeError as e:
-                print("Error: Invalid JSON format(eraの出力がjsonフォーマットになってない) - ", e)
-                sys.exit()
+        save_path = event.src_path
+        # SaveJSONHandlerにファイル読み込みを委譲
+        self.save = SJHFactory.create_instance(save_path)
 
-            if len(self.queue) >= QUEUE_MAX_SIZE:
-                self.queue.pop(0)
-            self.queue.append((event.src_path, content))
+        if len(self.queue) >= QUEUE_MAX_SIZE:
+            self.queue.pop(0)
+        self.queue.append((event.src_path, self.save))
 
-def TaskExecutor(queue,driver):
+
+def TaskExecutor(order_queue,driver):
     while True:
-        if len(queue) > 0:
-            # キューからオーダーを取り出す
-            orders = queue.pop(0)
-            # ordersはjsonをloadした結果で辞書(dict)型だそうです。 なんで[1]なのかわからんけど下記の様に取り出せる。
-            # ---------ここがメインのオーダー処理--------------------------------------------------------------------------------------------------------
-            print("txtを読み込み シーン:" + str(orders[1]["scene"])) #読み込みチェック　シーンを書き出す
-            print("キャラ名:" + str(orders[1]["target"])) #キャラ名を書き出す
+        if order_queue:
+            # キューから一番古いオーダーを取り出す
+            file_path, sjhandler  = order_queue.pop(0)
+            # ordersはjsonをloadした結果で辞書(dict)型  [0]はpath､[1]が内容
+            # ---------ここがメインのオーダー処理-----------------------
+            # SaveJSONHandlerのインスタンスからJSONデータを取得
+            json_data = sjhandler.data  # JSONデータを別の変数に代入
+            print("txtを読み込み シーン:" + json_data["scene"]) #読み込みチェック　シーンを書き出す
+            print("キャラ名:" + json_data["target"]) #キャラ名を書き出す
             
             
-            # プロンプト整形
-            prompt,negative,gen_width,gen_height = promptmaker(orders[1])
+            # プロンプト整形 SaveJSONHandlerのメソッドを使うため  インスタンスそのもの  をわたす
+            prompt,negative,gen_width,gen_height = promptmaker(sjhandler)
 
             # add_prompt.txtの内容をpromptに追記する
             if add_prompt機能:
@@ -100,8 +107,8 @@ def TaskExecutor(queue,driver):
 
             print("\n完了")
             # 残りキューの表示
-            mark = " ☆" * len(queue)
-            print("未処理キュー:" + str(len(queue)) + mark)
+            mark = " ☆" * len(order_queue)
+            print("未処理キュー:" + str(len(order_queue)) + mark)
         else:
             # キューが空の場合は少し待つ
             time.sleep(0.02)
