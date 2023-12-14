@@ -1,19 +1,23 @@
-import os
 import asyncio
-import time
-import requests
-from watchdog.observers.polling import PollingObserver
-from watchdog.events import FileSystemEventHandler
-from module.savedata_handler import SJHFactory
-from module.sub import gen_Image
-from module.api import gen_Image_api
 import configparser
+import os
+import sys
+import time
 from tkinter import filedialog
-from eratohoYM.suberatohoYM import promptmaker #YMの場合こちらをインポートする
+
+import requests
+from eratohoYM.suberatohoYM import promptmaker  # YMの場合こちらをインポートする
 #from eraTW.suberaTW import promptmaker #TWの場合こちらをインポートする
 #from eraImascgpro.subcgpro import promptmaker
+from module.api import gen_image_api
+from module.savedata_handler import SJHFactory
+from module.csv_manager import CSVMFactory
+from module.csv_manager import search_imported_variant
+from module.sub import gen_Image
 from selenium import webdriver
-import sys
+from watchdog.events import FileSystemEventHandler
+from watchdog.observers.polling import PollingObserver
+
 
 class FileHandler(FileSystemEventHandler):
     """受け取る引数 order_queue は list
@@ -34,9 +38,12 @@ class FileHandler(FileSystemEventHandler):
 
 
     def handle_event(self, event):
-        if not event.is_directory and event.src_path.endswith('.txt'):
-            self.txt_event(event)
-
+        if not event.is_directory:
+            if event.src_path.endswith('.txt'):
+                self.txt_event(event)
+            elif event.src_path.endswith('.csv'):
+                self.csv_event(event)
+                
     def txt_event(self, event):
         # ファイルが作成されたらキューに追加する
         print("\ntxt検知")
@@ -50,6 +57,15 @@ class FileHandler(FileSystemEventHandler):
             self.queue.pop(0)
         self.queue.append((event.src_path, self.save))
 
+    def csv_event(self, event):
+        # CSVファイルが更新されたときの処理
+        print("\nCSVファイル検知: " + event.src_path)
+
+        csvm = CSVMFactory.get_instance()
+        # CSVManagerにファイルの読み込みを委譲し、データフレームを更新
+        csv_name = os.path.basename(event.src_path)
+        csvm.process_csv_event(csv_name)
+        
 
 def TaskExecutor(order_queue,driver):
     while True:
@@ -88,9 +104,9 @@ def TaskExecutor(order_queue,driver):
             # ブラウザ操作
             i = 1
             while True:
-                #driverを取得できない場合gen_Image_apiで生成する
+                #driverを取得できない場合gen_image_apiで生成する
                 if driver is None:
-                    status_code = asyncio.run(gen_Image_api(prompt, negative, gen_width, gen_height))
+                    status_code = asyncio.run(gen_image_api(prompt, negative, gen_width, gen_height))
                     if status_code == 200:
                         time.sleep(0.1)
                         break #待機ゲージはapi.pyで処理する
@@ -170,6 +186,25 @@ if __name__ == '__main__':
         print("指定された監視フォルダ " + target_dir + " が見つかりません。終了します")
         sys.exit()
 
+    # CSVフォルダの処理
+    csv_dir = config_ini.get("Paths", "eracsv", fallback="")
+    skip_csv = int(config_ini.get("Generater", "csvフォルダの選択をスキップ", fallback=0))
+    if skip_csv and os.path.isdir(csv_dir):
+        csv_target_dir = csv_dir
+    else:
+        #search_imported_variantでインポートされてるCSVから監視するPathを作成
+        csv_target_dir = os.path.join(os.path.dirname(__file__), search_imported_variant(), 'csvfiles')
+    # iniにCSVパスを記入
+    config_ini.set("Paths", "eracsv", csv_target_dir)
+    with open(inipath, "w", encoding='UTF-8') as configfile:
+        config_ini.write(configfile)
+
+    # ダイアログを×で閉じたときの処理
+    if os.path.isdir(csv_target_dir) == False:
+        print("指定されたcsv監視フォルダ " + csv_target_dir + " が見つかりません。終了します")
+        sys.exit()
+
+
     # キューの最大サイズ
     QUEUE_MAX_SIZE = int(config_ini.get("Generater", "キューの最大サイズ", fallback=2))
     # 解像度切り替え
@@ -233,7 +268,7 @@ if __name__ == '__main__':
         if api_result is True:
             print("API利用可能")
         else:
-            print(f"APIの接続不能")
+            print("APIの接続不能")
             print("ブラウザ､APIともに使用不能")
             sys.exit()
 
@@ -242,10 +277,14 @@ if __name__ == '__main__':
     # ファイル監視の開始
     file_handler = FileHandler(order_queue)
     observer = PollingObserver()
+    #各ファイルの監視を設定
     observer.schedule(file_handler, target_dir, recursive=False)
-    observer.start()
     print("txtファイルの監視を開始しました。target_dir:" + str(target_dir))
-
+    observer.schedule(file_handler, csv_target_dir, recursive=False)
+    print("csvファイルの監視を開始しました。csv_target_dir:" + str(csv_target_dir))
+    
+    observer.start()
+    
     # タスクの実行
     task_executor = TaskExecutor(order_queue,driver)
     task_executor.run(driver)

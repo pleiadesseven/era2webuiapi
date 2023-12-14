@@ -1,15 +1,29 @@
+"""
+CSVM（CSV Manager）モジュール
+
+このモジュールは、era2webui用に特別に用意されたCSVデータを効率的に管理し、処理するための機能を提供する。
+主にCSVファイルの読み込み、データの変換、そしてCSVデータの検索といったタスクを担当するぜ。
+
+機能概要:
+- CSVファイルの読み込み: era2webui用に用意されたCSVファイルをPandas DataFrameとして読み込む。
+- データ変換: 文字列型の数値を整数型に変換したり、全角数字を半角に変換するなど、データを扱いやすい形式に変換する。
+- CSVデータの検索と取得: 特定の条件に基づいてCSVデータから情報を検索し、取得する。
+
+このモジュールの使用により、era2webuiの機能拡張やデータ管理がよりスムーズに、効率的に行えるぜ。
+"""
 import glob
 import os
 import re
+
 import pandas as pd
 
 
-
 def search_imported_variant():
-    """ここがなんか汚いが今のところここでしか使わない
+    """ここがなんか汚い
     'era2webui.py' からインポートされているバリアントを検索する。
     Returns:
-        str: インポートされているバリアントの名前。見つからない場合はNoneを返す。
+        str:インポートされているバリアントのモージュールが入ったフォルダ名
+            見つからない場合はNoneを返す。
     """
     # カレントディレクトリのパスを取得
     base_dir = os.path.dirname(__file__)
@@ -106,6 +120,10 @@ class CSVManager:
 
 
     def csvdata_import(self):
+        """
+        generate_csvlistで作られたself.csvlistを基づいて
+        名前をキーにしてデータフレームに変換してクラス変数に保存
+        """
         for csv_name, _ in self.csvlist.items():
             try:
                 df = self.read_csv(csv_name)
@@ -116,50 +134,28 @@ class CSVManager:
                     df = self.convert_fullwidth_to_halfwidth(df)
                     
                     self.csvdatas[csv_name] = df
-            except Exception as e:
-                print(f"CSVファイル {csv_name} の読み込み中にエラーが発生したぜ: {e}")
+            except FileNotFoundError:
+                print(f"csvdata_import: CSVファイル {csv_name} が見つからないぜ: {csv_name}")
         print("CSVのDataをCSVManagerのクラス辞書に登録したぜ")
 
 
     def add_cloth_columns(self):
-        df = self.csvdatas["cloth.csv"]
-        columns_to_copy  = {
-            'class_name': 'カテゴリ',
-            'obj_id': 'カテゴリ内番号',
-            'attribute_name': '衣類名',
-            'equip_position_no': '装備部位',
-            'display_part_no': '表示部位NO',
-            'display_part': '表示部位',
-            # 他のカラム変換もここに追加
-        }
-        transformed_df = self.add_columns_with_copy(df, columns_to_copy)
-        self.csvdatas["cloth.csv"] = transformed_df  # 更新されたDataFrameを保存
-
-
-    # def process_csv_data(self, csv_name):
-    #     """
-    #     #使ってないかも あとで確認
-    #     CSVファイルのデータを読み込んでPandas DataFrameに変換し、
-    #     それを辞書形式にする。
-
-    #     Args:
-    #         csv_name (str): 読み込むべきCSVファイルの名前。
-
-    #     Returns:
-    #         dict: CSVデータを辞書形式に変換したもの。
-    #     """
-    #     # find_csv_path メソッドを使ってファイルのパスを取得する想定
-    #     _, file_path = self.find_csv_path(csv_name)
-    #     if file_path is None:
-    #         print(f"{csv_name} のPathが見つからないぜ")
-    #         return None
-        
-    #     try:
-    #         df = pd.read_csv(file_path)
-    #         return df.to_dict(orient='index')
-    #     except FileNotFoundError:
-    #         print(f"ファイル {file_path} が見つからなかったぜ。")
-    #         return None
+        if 'cloth.csv' in self.csvdatas:
+            df = self.csvdatas["cloth.csv"]
+            columns_to_copy  = {
+                'class_name': 'カテゴリ',
+                'obj_id': 'カテゴリ内番号',
+                'attribute_name': '衣類名',
+                'equip_position_no': '装備部位',
+                'display_part_no': '表示部位NO',
+                'display_part': '表示部位',
+                # 他のカラム変換もここに追加
+            }
+            transformed_df = self.add_columns_with_copy(df, columns_to_copy)
+            self.csvdatas["cloth.csv"] = transformed_df  # 更新されたDataFrameを保存
+        else:
+            # 必要なファイルがない場合の処理
+            print("add_cloth_columns:ファイルが見つからないから、処理飛ばすぜ。バリアンとによっては関係ない処理だ")
 
 
     def combine_character_csvs(self):
@@ -203,11 +199,12 @@ class CSVManager:
             self.csvdatas['cloth.csv'] = cloth_df
         else:
             # 必要なファイルがない場合の処理
-            print("ファイルが見つからないから、処理飛ばすぜ。バリアンとによっては関係ない処理だ")
+            print("load_display_part:ファイルが見つからないから、処理飛ばすぜ。バリアンとによっては関係ない処理だ")
+
 
     def read_csv(self, csv_name):
         """
-        CSVファイル名からPandas DataFrameを読み込んで返す。
+        CSVファイル名をキーにクラス変数のPandas DataFrameを読み込んで返す。
         Args:
             csv_name (str): 読み込むCSVファイルの名前。
         Returns:
@@ -216,15 +213,18 @@ class CSVManager:
         """
         # find_csv_path メソッドを使ってファイルの正しいパスを取得する例
         _, file_path = self.find_csv_path(csv_name)
-        if file_path is None:
-            print(f"read_csv:ファイル名 {csv_name} に対応するパスが見つからなかったぜ。")
-            return None
 
         try:
             df = pd.read_csv(file_path)
             return df
         except FileNotFoundError:
             print(f"read_csv:ファイル {file_path} が見つからなかったぜ。")
+            return None
+        except pd.errors.ParserError as e:
+            print(f"read_csv:ファイル {file_path} の読み込み中にパースエラーが発生したぜ。詳細: {e}")
+            return None
+        except Exception as e:
+            print(f"read_csv:ファイル {file_path} の読み込み中に予期せぬエラーが発生したぜ。詳細: {e}")
             return None
 
 
@@ -280,16 +280,16 @@ class CSVManager:
             # データフレームから値を取得
             prompt = dataframe.loc[dataframe[key] == value, column].fillna("").values[0]
         except KeyError as e:
-            print(f"Error: {csvname}: 指定したキー '{key}' または列 '{column}' で '{value}' が無いぞ。{e}")
+            print(f"get_df: {csvname}: 指定したキー '{key}' または列 '{column}' で '{value}' が無いぞ。{e}")
             return "ERROR"
         except IndexError as e:
-            print(f"Error: {csvname}: 指定したインデックスが範囲外。{e}")
+            print(f"get_df: {csvname}: 指定したインデックスが範囲外。{e}")
             return "ERROR"
         except pd.errors.DataError as e:
-            print(f"Error: {csvname}: データ処理に関するエラー。{e}")
+            print(f"get_df: {csvname}: データ処理に関するエラー。{e}")
             return "ERROR"
         except Exception as e:
-            print(f"get_df: 不明な他のエラー: {e}")
+            print(f"get_df: {csvname}: 不明な他のエラー: {e}")
             return "ERROR"
         return prompt
 
@@ -324,13 +324,13 @@ class CSVManager:
                 prompt = ""
 
         except KeyError as e:
-            print(f"Error: {csvname}: キー'{key}'か'{subkey}'、または列'{column}' で '{value}' が無いぞ。{e}")
+            print(f"get_df_2key: {csvname}: キー'{key}'か'{subkey}'、または列'{column}' で '{value}' が無いぞ。{e}")
             return "ERROR"
         except IndexError as e:
-            print(f"Error: {csvname}: 条件'{key} = {value}' かつ '{subkey} = {subvalue}' を満たすデータが見つからなかった - {e}")
+            print(f"get_df_2key: {csvname}: 条件'{key} = {value}' かつ '{subkey} = {subvalue}' を満たすデータが見つからなかった - {e}")
             return "ERROR"
         except Exception as e:
-            print(f"get_df_2key:予期せぬエラー発生：{e}")
+            print(f"get_df_2key: {csvname}: 予期せぬエラー発生：{e}")
             return "ERROR"
 
         # 成功した場合、見つかったプロンプトを返す
@@ -357,6 +357,70 @@ class CSVManager:
                 text = re.sub(chi, self.get_df(csvname, "置換前", csv参照用, "置換後"), text)
                 # get_dfがエラーを出した場合、文字列"Error"に置換される
         return text
+
+    def process_csv_event(self,csvname):
+        """
+        FileHandlerが検知したCSVファイルの更新を処理する
+        新しく読み込んだcsvとクラス辞書から取得したデータフレームを比較
+        変更があった部分を既存のデータフレームに対して更新
+        'Character.csv' と 'Add_Character.csv' の更新は異なる処理にする
+        Args:
+            csvname (str): 処理するCSVファイル名。
+        """
+        if csvname in ['Character.csv', 'Add_Character.csv']:
+            self.update_df_with_key_column(csvname)
+            return  # 早期リターンで通常の処理をスキップする
+        
+        new_df = self.read_csv(csvname)
+        old_df = pd.DataFrame(self.csvdatas[csvname])
+        new_df = self.retain_columns(old_df, new_df) #new_dfに無いがold_dfにあるカラムのデータを追加する
+        diff = old_df.compare(new_df)  # 比較して違いを取得する
+
+        for index in diff.index:
+            for col in diff.columns.levels[0]:
+                if not diff[col]['self'].isna().all(): # 更新がある列だけ処理する
+                    update_value = diff.at[index, (col, 'other')]
+                    old_df.at[index, col] = update_value  # 更新値を古いデータフレームに適用する
+
+        self.csvdatas[csvname] = old_df.to_dict('index')  # 更新したデータフレームを辞書に戻してクラス辞書を更新する
+
+
+    def update_df_with_key_column(self,csvname):
+        """
+        'Character.csv' と 'Add_Character.csv' 用のめんどくさい処理
+        バグの温床になるかも知れない あとで見直す
+        Args:
+            csvname (_type_): _description_
+        """
+        # old_dfとnew_dfをkey_columnをキーにしてマージする。
+        # how='outer'は、両方のDataFrameにある全てのキーの組み合わせを保持する。
+        new_df = self.read_csv(csvname)
+        old_df = self.csvdatas['Character.csv']
+        merged_df = pd.merge(old_df, new_df, on="キャラ名", how='outer', suffixes=('_old', '_new'))
+        
+        # 差分がある行だけを更新する。
+        for col in new_df.columns:
+            if col != "キャラ名":
+                # 新旧カラム名を作成して比較する。
+                old_col = f"{col}_old"
+                new_col = f"{col}_new"
+                # NaNを確認することで新たに追加された行を検出する。
+                is_new_entry = merged_df[old_col].isna()
+                # 既存のデータかつ新しい情報で更新が必要な行を検出する。
+                needs_update = merged_df[old_col].notna() & (merged_df[old_col] != merged_df[new_col])
+                # 更新対象の行に新しいデータを適用する
+                merged_df.loc[needs_update, col] = merged_df.loc[needs_update, new_col]
+                # 新規追加された行を新しいデータフレームに追加する
+                merged_df.loc[is_new_entry, col] = merged_df.loc[is_new_entry, new_col]
+
+        # キー番号以外の '_old', '_new' 接尾辞が付いたカラムを削除し、元の形式に戻す
+        for col in old_df.columns:
+            if col != "キャラ名" and (f"{col}_old" in merged_df.columns or f"{col}_new" in merged_df.columns):
+                merged_df.drop(columns=[f"{col}_old", f"{col}_new"], inplace=True)
+
+        # キー番号が重複する行を削除
+        merged_df.drop_duplicates(subset=["キャラ名"], inplace=True)
+        self.csvdatas['Character.csv'] = merged_df
 
 
     def write_specific_df_to_csv(self, file_name, csv_name):
@@ -435,3 +499,21 @@ class CSVManager:
         for new_column, original_column in columns_to_copy.items():
             df[new_column] = df[original_column]
         return df
+
+
+    def retain_columns(self, old_df, new_df):
+        """
+        更新後のデータフレームに更新前のデータフレームにあるカラムがない場合
+        更新前のデータフレームからカラムと値を移植する
+        Args:
+            original_df (df): 更新前のデータフレーム
+            new_df (df): 更新後のデータフレーム
+
+        Returns:
+            _type_: _description_
+        """
+        for col in old_df.columns:
+            if col not in new_df.columns:
+                new_df[col] = old_df[col]
+        return new_df
+    
