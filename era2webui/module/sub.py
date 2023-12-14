@@ -79,7 +79,9 @@ def gen_Image(driver, prompt, negative, gen_width, gen_height):
     actions.key_down(Keys.ENTER)
     actions.perform()
 
-    # -----生成が行われたかの判定。とりあえずブラウザのtitleで判断。（生成中はタイトルが変わる。"Stable Diffusion"に戻ったら完了）タイトル変化に1秒ほどのラグがあり、1秒未満で完了すると検知できない
+    # -----生成が行われたかの判定。とりあえずブラウザのtitleで判断。
+    # （生成中はタイトルが変わる。"Stable Diffusion"に戻ったら完了）
+    # タイトル変化に1秒ほどのラグがあり、1秒未満で完了すると検知できない
 
     print("生成中", end="")
     i = 1
@@ -106,10 +108,9 @@ def gen_Image(driver, prompt, negative, gen_width, gen_height):
 
 
 
-
-# GUI
 class ReadConfig:
     """
+    # GUI
     このクラスは、設定ファイル（config.ini）を扱うためのものだぜ。
     ファイルを読み込んで、ユーザーが選んだフォルダパスを保存するんだ。使い方は簡単、
     インスタンスを作ってフォルダ選択を促すだけ。あとは、このクラスが裏で全てやってくれるぜ。
@@ -162,7 +163,7 @@ class ReadConfig:
 # 解像度文字列を解釈する関数
 
 
-def get_width_and_height(kaizoudo, replacelist):
+def get_width_and_height(kaizoudo):
     """
     渡された解像度文字列を解釈し、幅と高さの整数値のペアを返します。
 
@@ -173,8 +174,7 @@ def get_width_and_height(kaizoudo, replacelist):
     その解像度を適用します。置換機能も組み込まれているから、柔軟な指定が可能だ。
 
     Args:
-        kaizoudo (str): 解読する解像度を示す文字列です。
-        replacelist (dict): 置換処理のためのリスト（辞書型）です。
+        kaizoudo (str): 解読する解像度を示す文字列です。。
 
     Returns:
         tuple: (幅, 高さ) の形で解像度の数値を返します。
@@ -209,7 +209,7 @@ def get_width_and_height(kaizoudo, replacelist):
     try:
         width = int(kai[0])
         height = int(kai[1])
-    except Exception as e:
+    except ValueError as e:
         # エラー処理3 splitできたが数値として認識できない場合
         print(f"解像度取得に失敗。splitできたが数値として認識できなかった。詳細:{e}")
         print("解像度変更を中止")

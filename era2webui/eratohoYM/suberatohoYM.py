@@ -355,12 +355,11 @@ def promptmaker(sjh):
     # 置換機能の関数を呼ぶ
     # プロンプト中に%で囲まれた文字列があれば置換する機能
     # 失敗するとErrorというプロンプトが残る
-    ReplaceList = 'ReplaceList.csv'
     prompt = csvm.chikan(prompt)
     negative = csvm.chikan(negative)
     
     # 解像度文字列を解釈する関数
-    gen_width,gen_height = get_width_and_height(kaizoudo, ReplaceList)
+    gen_width,gen_height = get_width_and_height(kaizoudo)
 
     # 重複カンマを1つにまとめる
     prompt = re.sub(',+',',',prompt)
