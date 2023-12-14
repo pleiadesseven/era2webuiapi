@@ -274,7 +274,7 @@ class CSVManager:
         """
         try:
             # CSVManagerの辞書からデータフレームを取得
-            dataframe = pd.DataFrame(self.csvdatas[csvname])
+            dataframe = self.csvdatas[csvname]
             # pd.set_option('display.max_columns', 50)
             # print(dataframe)
             # データフレームから値を取得
@@ -313,15 +313,15 @@ class CSVManager:
         """
         try:
             # CSVManagerの辞書からデータフレームを取得
-            dataframe = pd.DataFrame(self.csvdatas[csvname])
+            dataframe = self.csvdatas[csvname]
 
             # DataFrameから条件に合致する行を検索し、指定されたcolumnの値を取得
             filtered_df = dataframe[(dataframe[key] == value) & (dataframe[subkey] == subvalue)]
             if not filtered_df.empty  and not pd.isna(filtered_df.iloc[0][column]):
                 prompt = filtered_df.iloc[0][column]
             else:
-                print(f"Error: {csvname}: 条件'{key} = {value}' かつ '{subkey} = {subvalue}' を満たすプロンプトがNaNか見つからなかったぜ")
-                prompt = ""
+                print(f"Error: {csvname}: 条件'{key} = {value}' かつ '{subkey} = {subvalue}' を満たす '{column}' がNaNか見つからなかったぜ")
+                prompt = "ERROR"
 
         except KeyError as e:
             print(f"get_df_2key: {csvname}: キー'{key}'か'{subkey}'、または列'{column}' で '{value}' が無いぞ。{e}")
@@ -381,8 +381,8 @@ class CSVManager:
                 if not diff[col]['self'].isna().all(): # 更新がある列だけ処理する
                     update_value = diff.at[index, (col, 'other')]
                     old_df.at[index, col] = update_value  # 更新値を古いデータフレームに適用する
-
-        self.csvdatas[csvname] = old_df.to_dict('index')  # 更新したデータフレームを辞書に戻してクラス辞書を更新する
+        
+        self.csvdatas[csvname] = old_df  # 更新したデータフレームをクラス辞書を更新する
 
 
     def update_df_with_key_column(self,csvname):
@@ -441,7 +441,7 @@ class CSVManager:
     #CSVM補助用メソッド類
     #あとで見直す 他のクラスにまとめるかも
     def convert_str_numbers_to_int(self, df):
-        """数字だけのセルをstrからintに変換
+        """数字だけのセルをintに変換
 
         Args:
             df (_type_): _description_
