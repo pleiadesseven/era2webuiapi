@@ -1,10 +1,46 @@
+"""eraのTEXTLOG.ERBが出力したJSONを扱いやすいように変換してクラス辞書に格納
+呼び出すときは以下の例のようにファクトリークラスから呼び出す
+self.save = SJHFactory.create_instance(save_path)
+
+キューごとにインスタンスを作成するので扱うときは引数でインスタンスごと渡す
+使用例: TaskExecutor の prompt,negative,gen_width,gen_height = promptmaker(sjhandler)
+Returns:
+    SaveJSONHandler: 
+"""
 import sys
 import json
 
 
 class SJHFactory:
+    """
+    これは、eraのセーブデータの変換場だぜ！
+    eraの複雑なJSONデータを扱いやすく変換してくれるSaveJSONHandlerインスタンスを、
+    あっという間に作り出すんだ。
+
+    ここは、ファイルパスを受け取って、それをSaveJSONHandlerに渡す。
+    すると、JSONデータの管理や処理ができるようになるんだ。
+
+    Returns:
+        SaveJSONHandler:eraのJSONデータを扱うためのSaveJSONHandlerクラスのインスタンス。
+                        これでデータ処理がぐっと楽になるぜ！
+    """
     @staticmethod
     def create_instance(file_path):
+        """
+        このスタティックメソッドは、eraのJSONデータを扱うための専用ツール、
+        SaveJSONHandlerのインスタンスを生成する関数だぜ！
+
+        クラスインスタンスが不要なので、直接クラスからこのメソッドを叩ける。
+        つまり、SJHFactory.create_instance()という風に使うんだ。
+
+        Args:
+            file_path (str): JSONデータのファイルパス。ここにeraのセーブデータの場所を指定するんだ。
+                            TaskExecutorから適時最新のpathが送られてくるから意識する必要はあまりないぜ｡
+
+        Returns:
+            SaveJSONHandler:指定されたファイルパスのJSONデータを扱うSaveJSONHandlerのインスタンスを返す。
+                            これでJSONの扱いが楽チンになるぜ！
+        """
         return SaveJSONHandler(file_path)
 
 class SaveJSONHandler:
@@ -101,3 +137,4 @@ class SaveJSONHandler:
             print(f'エラー: キー "{key}" はデータに存在しません。')
             return None
         return self.data.get(key)
+    
