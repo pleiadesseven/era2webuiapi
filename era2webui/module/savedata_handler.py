@@ -5,7 +5,7 @@ self.save = SJHFactory.create_instance(save_path)
 キューごとにインスタンスを作成するので扱うときは引数でインスタンスごと渡す
 使用例: TaskExecutor の prompt,negative,gen_width,gen_height = promptmaker(sjhandler)
 Returns:
-    SaveJSONHandler: 
+    SaveJSONHandler:
 """
 import sys
 import json
@@ -58,7 +58,7 @@ class SaveJSONHandler:
     def load_save(self, savetxt_path):
         """渡されたpathからJSONを読んで辞書に格納
         Args:
-            new_savetxt_path (str): txtのpath 
+            new_savetxt_path (str): txtのpath
         """
         if savetxt_path is None:
             print("エラー: ファイルパスが指定されていません。txtの更新を待っています。")

@@ -174,11 +174,11 @@ def get_width_and_height(kaizoudo):
     その解像度を適用します。置換機能も組み込まれているから、柔軟な指定が可能だ。
 
     Args:
-        kaizoudo (str): 解読する解像度を示す文字列です。。
+        kaizoudo (str): 解読する解像度を示す文字列です。(%正方形%､%横長%)
 
     Returns:
         tuple: (幅, 高さ) の形で解像度の数値を返します。
-            解読できない場合やエラーがある場合は (0, 0) を返します。
+                解読できない場合やエラーがある場合は (0, 0) を返します。
 
     Raises:
         ValueError: 解像度文字列が不正であるか、数値に変換できない値が含まれている場合。
@@ -216,3 +216,36 @@ def get_width_and_height(kaizoudo):
         return 0, 0
 
     return width, height
+
+
+# def calculate_resolution_from_aspect_ratio(aspect_ratio, base_dimension):
+#     """
+#     解像度の頭脳プレーだぜ！アスペクト比と基準寸法から、いかにも賢そうな解像度を計算してやる。
+
+#     アスペクト比が「16:9」みたいな感じで来るから、ここはちょっとした算数の時間だ。基準寸法を幅にするか高さにするか、それ次第で結果が変わるぜ。ま、心配すんな、計算は俺に任せておけ！
+
+#     Args:
+#         aspect_ratio (str): アスペクト比。これが解像度のカギだ。
+#         base_dimension (int): 幅か高さのどっちか。これが基準になるサイズだ。
+
+#     Returns:
+#         tuple: 解像度がわかると、画面がパッと広がるな。幅と高さをタプルで返してやるよ。
+
+#     Raises:
+#         ValueError: アスペクト比が変な形してたら、こっちも困る。計算できないときはエラーを吐くぜ。
+#     """
+#     try:
+#         width_ratio, height_ratio = map(int, aspect_ratio.split(":"))
+#     except ValueError:
+#         print("アスペクト比の解析に失敗しました。")
+#         return 0, 0
+
+#     # 基準寸法を用いて実際の解像度を計算
+#     if width_ratio > height_ratio:
+#         width = base_dimension
+#         height = int(base_dimension * height_ratio / width_ratio)
+#     else:
+#         height = base_dimension
+#         width = int(base_dimension * width_ratio / height_ratio)
+
+#     return width, height

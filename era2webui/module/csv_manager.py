@@ -62,7 +62,6 @@ class CSVMFactory:
         if cls._instance is None:
             cls._instance = CSVManager()
         return cls._instance
-    
 
 class CSVManager:
     """
@@ -77,7 +76,7 @@ class CSVManager:
     Attributes:
         csvlist (str): CSVファイルパスのリストが記載されたCSVファイルへのパス。
         loaded_csvs (dict): 読み込み済みのCSVデータをキャッシュするための辞書。
-        
+
     """
     def __init__(self):
         self.csvlist = {}
@@ -132,7 +131,7 @@ class CSVManager:
                     df = self.convert_str_numbers_to_int(df)
                     # 全角数字を半角数字に変換する前処理
                     df = self.convert_fullwidth_to_halfwidth(df)
-                    
+
                     self.csvdatas[csv_name] = df
             except FileNotFoundError:
                 print(f"csvdata_import: CSVファイル {csv_name} が見つからないぜ: {csv_name}")
@@ -370,7 +369,7 @@ class CSVManager:
         if csvname in ['Character.csv', 'Add_Character.csv']:
             self.update_df_with_key_column(csvname)
             return  # 早期リターンで通常の処理をスキップする
-        
+
         new_df = self.read_csv(csvname)
         old_df = pd.DataFrame(self.csvdatas[csvname])
         new_df = self.retain_columns(old_df, new_df) #new_dfに無いがold_dfにあるカラムのデータを追加する
@@ -381,7 +380,7 @@ class CSVManager:
                 if not diff[col]['self'].isna().all(): # 更新がある列だけ処理する
                     update_value = diff.at[index, (col, 'other')]
                     old_df.at[index, col] = update_value  # 更新値を古いデータフレームに適用する
-        
+
         self.csvdatas[csvname] = old_df  # 更新したデータフレームをクラス辞書を更新する
 
 
@@ -397,7 +396,7 @@ class CSVManager:
         new_df = self.read_csv(csvname)
         old_df = self.csvdatas['Character.csv']
         merged_df = pd.merge(old_df, new_df, on="キャラ名", how='outer', suffixes=('_old', '_new'))
-        
+
         # 差分がある行だけを更新する。
         for col in new_df.columns:
             if col != "キャラ名":

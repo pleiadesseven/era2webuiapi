@@ -6,8 +6,8 @@ import time
 from tkinter import filedialog
 
 import requests
-from eratohoYM.suberatohoYM import promptmaker  # YMの場合こちらをインポートする
-#from eraTW.suberaTW import promptmaker #TWの場合こちらをインポートする
+#from eratohoYM.suberatohoYM import promptmaker  # YMの場合こちらをインポートする
+from eraTW.suberaTW import promptmaker #TWの場合こちらをインポートする
 #from eraImascgpro.subcgpro import promptmaker
 from module.api import gen_image_api
 from module.savedata_handler import SJHFactory
@@ -28,8 +28,8 @@ class FileHandler(FileSystemEventHandler):
     def __init__(self, queue):
         super().__init__()
         self.queue = queue
-        
-    
+
+
     # 作成と変更は同じ処理
     def on_created(self, event):
         self.handle_event(event)
@@ -43,7 +43,7 @@ class FileHandler(FileSystemEventHandler):
                 self.txt_event(event)
             elif event.src_path.endswith('.csv'):
                 self.csv_event(event)
-                
+
     def txt_event(self, event):
         # ファイルが作成されたらキューに追加する
         print("\ntxt検知")
@@ -65,7 +65,7 @@ class FileHandler(FileSystemEventHandler):
         # CSVManagerにファイルの読み込みを委譲し、データフレームを更新
         csv_name = os.path.basename(event.src_path)
         csvm.process_csv_event(csv_name)
-        
+
 
 def TaskExecutor(order_queue,driver):
     while True:
@@ -78,8 +78,8 @@ def TaskExecutor(order_queue,driver):
             json_data = sjhandler.data  # JSONデータを別の変数に代入
             print("txtを読み込み シーン:" + json_data["scene"]) #読み込みチェック　シーンを書き出す
             print("キャラ名:" + json_data["target"]) #キャラ名を書き出す
-            
-            
+
+
             # プロンプト整形 SaveJSONHandlerのメソッドを使うため  インスタンスそのもの  をわたす
             prompt,negative,gen_width,gen_height = promptmaker(sjhandler)
 
@@ -110,7 +110,7 @@ def TaskExecutor(order_queue,driver):
                     if status_code == 200:
                         time.sleep(0.1)
                         break #待機ゲージはapi.pyで処理する
-                
+
                 else:
                     if gen_Image(driver,prompt,negative,gen_width,gen_height) == True:
                         break
@@ -175,7 +175,7 @@ if __name__ == '__main__':
     else:
         # ダイアログを開く
         target_dir = filedialog.askdirectory(title = "監視するsavフォルダを選択",initialdir = dir)
-    
+
     # iniに記入
     config_ini.set("Paths", "erasav", target_dir)
     with open(inipath, "w", encoding='UTF-8') as configfile:
@@ -234,7 +234,7 @@ if __name__ == '__main__':
             print("ブラウザを掴むのに失敗。chromeを-remote-debugging-port=9222オプションで開いておいてね")
             print(f"APIエラー詳細: {e}")
             return None
-    
+
 
     # APIの起動確認
     def check_api():
@@ -272,7 +272,7 @@ if __name__ == '__main__':
             print("ブラウザ､APIともに使用不能")
             sys.exit()
 
-        
+
 
     # ファイル監視の開始
     file_handler = FileHandler(order_queue)
@@ -282,9 +282,9 @@ if __name__ == '__main__':
     print("txtファイルの監視を開始しました。target_dir:" + str(target_dir))
     observer.schedule(file_handler, csv_target_dir, recursive=False)
     print("csvファイルの監視を開始しました。csv_target_dir:" + str(csv_target_dir))
-    
+
     observer.start()
-    
+
     # タスクの実行
     task_executor = TaskExecutor(order_queue,driver)
     task_executor.run(driver)
