@@ -359,67 +359,17 @@ class CSVManager:
 
     def process_csv_event(self,csvname):
         """
-        FileHandlerが検知したCSVファイルの更新を処理する
-        新しく読み込んだcsvとクラス辞書から取得したデータフレームを比較
-        変更があった部分を既存のデータフレームに対して更新
+        処理の遅さと引き換えに全部読み直させてバグの温床を潰す
         'Character.csv' と 'Add_Character.csv' の更新は異なる処理にする
         Args:
             csvname (str): 処理するCSVファイル名。
         """
-        if csvname in ['Character.csv', 'Add_Character.csv']:
-            self.update_df_with_key_column(csvname)
-            return  # 早期リターンで通常の処理をスキップする
+        self.csvdata_import()
+        self.combine_character_csvs() #Add_Characterを結合してCharacter.csvとして扱うので必ずself.csvdata_import()の後に呼べ
+        self.add_cloth_columns()
+        self.load_display_part()
+        print (f"{csvname}" )
 
-        new_df = self.read_csv(csvname)
-        old_df = pd.DataFrame(self.csvdatas[csvname])
-        new_df = self.retain_columns(old_df, new_df) #new_dfに無いがold_dfにあるカラムのデータを追加する
-        diff = old_df.compare(new_df)  # 比較して違いを取得する
-
-        for index in diff.index:
-            for col in diff.columns.levels[0]:
-                if not diff[col]['self'].isna().all(): # 更新がある列だけ処理する
-                    update_value = diff.at[index, (col, 'other')]
-                    old_df.at[index, col] = update_value  # 更新値を古いデータフレームに適用する
-
-        self.csvdatas[csvname] = old_df  # 更新したデータフレームをクラス辞書を更新する
-
-
-    def update_df_with_key_column(self,csvname):
-        """
-        'Character.csv' と 'Add_Character.csv' 用のめんどくさい処理
-        バグの温床になるかも知れない あとで見直す
-        Args:
-            csvname (_type_): _description_
-        """
-        # old_dfとnew_dfをkey_columnをキーにしてマージする。
-        # how='outer'は、両方のDataFrameにある全てのキーの組み合わせを保持する。
-        new_df = self.read_csv(csvname)
-        old_df = self.csvdatas['Character.csv']
-        merged_df = pd.merge(old_df, new_df, on="キャラ名", how='outer', suffixes=('_old', '_new'))
-
-        # 差分がある行だけを更新する。
-        for col in new_df.columns:
-            if col != "キャラ名":
-                # 新旧カラム名を作成して比較する。
-                old_col = f"{col}_old"
-                new_col = f"{col}_new"
-                # NaNを確認することで新たに追加された行を検出する。
-                is_new_entry = merged_df[old_col].isna()
-                # 既存のデータかつ新しい情報で更新が必要な行を検出する。
-                needs_update = merged_df[old_col].notna() & (merged_df[old_col] != merged_df[new_col])
-                # 更新対象の行に新しいデータを適用する
-                merged_df.loc[needs_update, col] = merged_df.loc[needs_update, new_col]
-                # 新規追加された行を新しいデータフレームに追加する
-                merged_df.loc[is_new_entry, col] = merged_df.loc[is_new_entry, new_col]
-
-        # キー番号以外の '_old', '_new' 接尾辞が付いたカラムを削除し、元の形式に戻す
-        for col in old_df.columns:
-            if col != "キャラ名" and (f"{col}_old" in merged_df.columns or f"{col}_new" in merged_df.columns):
-                merged_df.drop(columns=[f"{col}_old", f"{col}_new"], inplace=True)
-
-        # キー番号が重複する行を削除
-        merged_df.drop_duplicates(subset=["キャラ名"], inplace=True)
-        self.csvdatas['Character.csv'] = merged_df
 
 
     def write_specific_df_to_csv(self, file_name, csv_name):
