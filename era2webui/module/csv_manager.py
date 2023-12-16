@@ -274,10 +274,18 @@ class CSVManager:
         try:
             # CSVManagerの辞書からデータフレームを取得
             dataframe = self.csvdatas[csvname]
-            # pd.set_option('display.max_columns', 50)
-            # print(dataframe)
-            # データフレームから値を取得
-            prompt = dataframe.loc[dataframe[key] == value, column].fillna("").values[0]
+            filtered_df = dataframe[dataframe[key] == value]
+
+            if not filtered_df.empty:
+                prompt = filtered_df.loc[:, column].fillna("").values[0]
+                if prompt == '':
+                    # promptが空文字の場合の処理
+                    #print(f"get_df: {csvname}: '{key}' の値が '{value}' の行が見つかったが、'{column}' 列は空文字だったぜ。") #プロンプト埋め用
+                    return "ERROR"
+            else:
+                print(f"get_df: {csvname}: '{key}' の値が '{value}' のデータが見つからないぜ。")
+                return "ERROR"
+
         except KeyError as e:
             print(f"get_df: {csvname}: 指定したキー '{key}' または列 '{column}' で '{value}' が無いぞ。{e}")
             return "ERROR"

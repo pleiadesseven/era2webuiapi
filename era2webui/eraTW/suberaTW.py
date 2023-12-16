@@ -29,11 +29,11 @@ class PromptMaker:
         self.create_situation_prompt()
         self.create_location_prompt()
         self.create_weather_prompt()
-        
+
         #表情ブレンダーはオーバーホールするまで暫定的にここへ
         p,n = Expression(self.sjh,self.flags)
         self.add_prompt("emotion", p, n)
-        
+
         if self.erascene == "TRAIN":
             self.create_train_prompt()
             self.create_effect_prompt()
@@ -41,6 +41,7 @@ class PromptMaker:
                 self.create_equip_prompt()
                 self.create_chara_prompt()
                 self.create_body_prompt()
+                self.clothing()
             self.create_cum_prompt()
             if self.flags.get("drawvagina") ==1:
                 self.create_juice_prompt()
@@ -48,6 +49,7 @@ class PromptMaker:
             self.create_chara_prompt()
             self.create_body_prompt()
             self.create_train_prompt()
+            self.clothing()
 
         #辞書がからの箇所を消す
         prompt_values = [value for value in self.prompt.values() if value.strip()]
@@ -72,9 +74,9 @@ class PromptMaker:
         if elements not in self.negative:
             raise KeyError(f"ネガティブプロンプトに '{elements}' は存在しねぇ！")
 
-        if prompt:
+        if prompt is not None and prompt != "ERROR":
             self.prompt[elements] += prompt
-        if nega:
+        if nega is not None and nega != "ERROR":
             self.negative[elements] += nega
 
 
@@ -117,32 +119,33 @@ class PromptMaker:
     def create_location_prompt(self):
         # 700箇所
         #IDとの整合はあとで確かめる
-        master = self.sjh.get_save("CFLAG:MASTER:現在位置")
+        master = self.sjh.get_save("現在位置")
         loc = self.get_csvname("location")
-        prompt = csvm.get_df(loc,"場所ID", master,"プロンプト")
-        nega = csvm.get_df(loc,"場所ID", master,"ネガティブ")
+        prompt = csvm.get_df(loc,"地名", master,"プロンプト")
+        nega = csvm.get_df(loc,"地名", master,"ネガティブ")
         self.add_prompt("location", prompt, nega)
 
 
     def create_weather_prompt(self):
         天気 = self.sjh.get_save("天気")
-        wea = self.get_csvname("location")
-        prompt = csvm.get_df(wea,"場所ID", 天気,"プロンプト")
-        nega = csvm.get_df(wea,"場所ID", 天気,"ネガティブ")
+        wea = self.get_csvname("weather")
+        prompt = csvm.get_df(wea,"天気", 天気,"プロンプト")
+        nega = csvm.get_df(wea,"天気", 天気,"ネガティブ")
 
-        # 昼夜の表現を追加
-        時間 = self.sjh.get_save("時間")
-        if 時間 in range(0, 360) or 時間 >= 1150:
-            prompt += "at night,"
-            nega += "(blue sky,twilight:1.3),"
-        elif 時間 in range(360, 1060):
-            prompt += "day,"
-            nega += "(night sky,night scene,twilight:1.3),"
-        elif 時間 in range(1060, 1150):
-            prompt += "in the twilight,"
-            nega += "(blue sky:1.3),"
+        if prompt != "ERROR":
+            # 昼夜の表現を追加
+            時間 = self.sjh.get_save("時間")
+            if 時間 in range(0, 360) or 時間 >= 1150:
+                prompt += "at night,"
+                nega += "(blue sky,twilight:1.3),"
+            elif 時間 in range(360, 1060):
+                prompt += "day,"
+                nega += "(night sky,night scene,twilight:1.3),"
+            elif 時間 in range(1060, 1150):
+                prompt += "in the twilight,"
+                nega += "(blue sky:1.3),"
 
-        self.add_prompt("weather", prompt, nega)
+            self.add_prompt("weather", prompt, nega)
 
 
 
@@ -171,8 +174,8 @@ class PromptMaker:
             # コマンドが未記入の場合はget_dfが"ERROR"を返すのでEvent.csvの汎用調教を呼ぶ
             prompt = csvm.get_df(tra,"コマンド名",com,"プロンプト")
             if prompt == "ERROR":
-                prompt += csvm.get_df(eve,"名称","汎用調教","プロンプト")
-                nega += csvm.get_df(eve,"名称","汎用調教","ネガティブ")
+                prompt = csvm.get_df(eve,"名称","汎用調教","プロンプト")
+                nega = csvm.get_df(eve,"名称","汎用調教","ネガティブ")
 
                 self.flags["drawchara"] = csvm.get_df(eve,"名称","汎用調教","キャラ描画")
                 self.flags["drawface"] = csvm.get_df(eve,"名称","汎用調教","顔描画")
@@ -242,20 +245,29 @@ class PromptMaker:
 
         # 特別な名前でプロンプトを登録してある場合、キャラ描写を強制的に上書きする処理
         uwagaki = csvm.get_df(cha,"キャラ名","描画キャラ上書き","プロンプト")
-        if uwagaki != "EROOR": #EROORじゃなかったら上書き
-            prompt = f"\(" + uwagaki + f"\)"
+        if uwagaki != "ERROR": #EROORじゃなかったら上書き
+            prompt = f"\({uwagaki}\)"
             nega = csvm.get_df(cha,"キャラ名","描画キャラ上書き","ネガティブ")
             self.add_prompt("chara", prompt, nega)
 
         else:
             #割り込みがなければ通常のキャラプロンプト読み込み処理
             name = self.sjh.get_save("target")
-            prompt = "\(" + csvm.get_df(cha,"キャラ名",name,"プロンプト") + ":"\
-                           + csvm.get_df(cha,"キャラ名",name,"プロンプト強調") + "\), "
-            prompt += "\(" + csvm.get_df(cha,"キャラ名",name,"プロンプト2") + "\), "
-            prompt += csvm.get_df(cha,"キャラ名",name,"キャラLora")
-            nega += csvm.get_df(cha,"キャラ名",name,"ネガティブ")
-            self.add_prompt("chara", prompt, nega)
+            prompt = csvm.get_df(cha,"キャラ名",name,"プロンプト")
+            prompt_wait = csvm.get_df(cha,"キャラ名",name,"プロンプト強調")
+            # prompt_waitが"ERROR"でない場合にのみ結合する
+            if prompt_wait != "ERROR":
+                prompt = f"\({prompt}:{prompt_wait}\)"
+            else:
+                prompt = f"\({prompt}\)"
+            self.add_prompt("chara", prompt, None)
+
+            prompt2 = csvm.get_df(cha,"キャラ名",name,"プロンプト2")
+            self.add_prompt("chara", prompt2, None)
+
+            chara_lora = csvm.get_df(cha,"キャラ名",name,"キャラLora")
+            nega = csvm.get_df(cha,"キャラ名",name,"ネガティブ")
+            self.add_prompt("chara", chara_lora, nega)
 
 
     def create_cum_prompt(self):
