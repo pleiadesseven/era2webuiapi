@@ -7,7 +7,8 @@ from tkinter import filedialog
 
 import requests
 #from eratohoYM.suberatohoYM import promptmaker  # YMの場合こちらをインポートする
-from eraTW.suberaTW import promptmaker #TWの場合こちらをインポートする
+#from eraTW.suberaTW import promptmaker #TWの場合こちらをインポートする
+from eraTW.suberaTW import PromptMaker
 #from eraImascgpro.subcgpro import promptmaker
 from module.api import gen_image_api
 from module.savedata_handler import SJHFactory
@@ -17,7 +18,6 @@ from module.sub import gen_Image
 from selenium import webdriver
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers.polling import PollingObserver
-
 
 class FileHandler(FileSystemEventHandler):
     """受け取る引数 order_queue は list
@@ -79,9 +79,9 @@ def TaskExecutor(order_queue,driver):
             print("txtを読み込み シーン:" + json_data["scene"]) #読み込みチェック　シーンを書き出す
             print("キャラ名:" + json_data["target"]) #キャラ名を書き出す
 
-
             # プロンプト整形 SaveJSONHandlerのメソッドを使うため  インスタンスそのもの  をわたす
-            prompt,negative,gen_width,gen_height = promptmaker(sjhandler)
+            promptmaker = PromptMaker(sjhandler)
+            prompt,negative,gen_width,gen_height = promptmaker.generate_prompt()
 
             # add_prompt.txtの内容をpromptに追記する
             if add_prompt機能:
