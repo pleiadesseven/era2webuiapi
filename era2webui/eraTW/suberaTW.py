@@ -258,7 +258,7 @@ class PromptMaker:
             # prompt_waitが"ERROR"でない場合にのみ結合する
             if prompt_wait != "ERROR":
                 prompt = f"\({prompt}:{prompt_wait}\)"
-            else:
+            elif prompt != "ERROR":
                 prompt = f"\({prompt}\)"
             self.add_prompt("chara", prompt, None)
 
@@ -446,9 +446,10 @@ class PromptMaker:
             for key, value in cloth_dict.items():
                 if key in clothings:
                     prompt = csvm.get_df(clo,"衣類名", value, "プロンプト")
-                    prompt = "(wearing " + prompt + ":1.3)"
-                    nega = csvm.get_df(clo,"衣類名", value, "ネガティブ")
-                    self.add_prompt("cloth", prompt, nega)
+                    if prompt != "ERROR":
+                        prompt = f"(wearing{prompt}:1.3)"
+                        nega = csvm.get_df(clo,"衣類名", value, "ネガティブ")
+                        self.add_prompt("cloth", prompt, nega)
 
         # 下半身上着
         if (pantse == 0 and pussye == 0)\
@@ -457,9 +458,10 @@ class PromptMaker:
             for key, value in cloth_dict.items():
                 if key in clothings:
                     prompt = csvm.get_df(clo,"衣類名", value, "プロンプト")
-                    prompt = "(wearing " + prompt + ":1.3)"
-                    nega = csvm.get_df(clo,"衣類名", value, "ネガティブ")
-                    self.add_prompt("cloth", prompt, nega)
+                    if prompt != "ERROR":
+                        prompt = f"(wearing{prompt}:1.3)"
+                        nega = csvm.get_df(clo,"衣類名", value, "ネガティブ")
+                        self.add_prompt("cloth", prompt, nega)
 
         for key, value in cloth_dict.items():
             clothings = ["帽子", "アクセサリ", "腕部装束", "外衣", "上半身下着2", "下半身下着1", "その他1", "その他2", "その他3", "靴下", "靴"]
@@ -472,12 +474,14 @@ class PromptMaker:
             prompt = csvm.get_df(clo,"衣類名","ノーブラ","プロンプト")
             nega = csvm.get_df(clo,"衣類名","ノーブラ","ネガティブ")
             self.add_prompt("cloth", prompt, nega)
+
         elif burae == 1: #ブラ見える
             if self.sjh.get_save("上半身下着2") != 0:
                 prompt = csvm.get_df(clo,"衣類名",self.sjh.get_save("upper_underwear"),"プロンプト")
-                prompt = "(wearing " + prompt + ":1.3)"
-                nega = csvm.get_df(clo,"衣類名",self.sjh.get_save("upper_underwear"),"ネガティブ")
-                self.add_prompt("cloth", prompt, nega)
+                if prompt != "ERROR":
+                    prompt = f"(wearing{prompt}:1.3)"
+                    nega = csvm.get_df(clo,"衣類名", value, "ネガティブ")
+                    self.add_prompt("cloth", prompt, nega)
 
         if nop: #ノーパン
             prompt = csvm.get_df(clo,"衣類名","ノーパン","プロンプト")
@@ -486,9 +490,10 @@ class PromptMaker:
         elif burae == 1: #パンツ見える
             if self.sjh.get_save("上半身下着2") != 0:
                 prompt = csvm.get_df(clo,"衣類名",self.sjh.get_save("upper_underwear"),"プロンプト")
-                prompt = "(wearing " + prompt + ":1.3)"
-                nega = csvm.get_df(clo,"衣類名",self.sjh.get_save("upper_underwear"),"ネガティブ")
-                self.add_prompt("cloth", prompt, nega)
+                if prompt != "ERROR":
+                    prompt = f"(wearing{prompt}:1.3)"
+                    nega = csvm.get_df(clo,"衣類名", value, "ネガティブ")
+                    self.add_prompt("cloth", prompt, nega)
 
         # panty aside
         # 挿入とクンニ

@@ -280,7 +280,7 @@ class CSVManager:
                 prompt = filtered_df.loc[:, column].fillna("").values[0]
                 if prompt == '':
                     # promptが空文字の場合の処理
-                    #print(f"get_df: {csvname}: '{key}' の値が '{value}' の行が見つかったが、'{column}' 列は空文字だったぜ。") #プロンプト埋め用
+                    print(f"get_df: {csvname}: '{key}' の値が '{value}' の行が見つかったが、'{column}' 列は空文字だったぜ。") #プロンプト埋め用
                     return "ERROR"
             else:
                 print(f"get_df: {csvname}: '{key}' の値が '{value}' のデータが見つからないぜ。")
