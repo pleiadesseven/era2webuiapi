@@ -139,8 +139,8 @@ class CSVManager:
 
 
     def add_cloth_columns(self):
-        if 'cloth.csv' in self.csvdatas:
-            df = self.csvdatas["cloth.csv"]
+        if 'Cloth.csv' in self.csvdatas:
+            df = self.csvdatas["Cloth.csv"]
             columns_to_copy  = {
                 'class_name': 'カテゴリ',
                 'obj_id': 'カテゴリ内番号',
@@ -151,7 +151,7 @@ class CSVManager:
                 # 他のカラム変換もここに追加
             }
             transformed_df = self.add_columns_with_copy(df, columns_to_copy)
-            self.csvdatas["cloth.csv"] = transformed_df  # 更新されたDataFrameを保存
+            self.csvdatas["Cloth.csv"] = transformed_df  # 更新されたDataFrameを保存
         else:
             # 必要なファイルがない場合の処理
             print("add_cloth_columns:ファイルが見つからないから、処理飛ばすぜ。バリアンとによっては関係ない処理だ")
@@ -178,9 +178,9 @@ class CSVManager:
         """
         display_part 辞書に(表示部位:n)のCSVデータを追加
         """
-        # cloth.csv と display_part.csv が存在するかチェック
-        if 'cloth.csv' in self.csvdatas and 'display_part.csv' in self.csvdatas:
-            cloth_df = self.csvdatas['cloth.csv']
+        # Cloth.csv と display_part.csv が存在するかチェック
+        if 'Cloth.csv' in self.csvdatas and 'display_part.csv' in self.csvdatas:
+            cloth_df = self.csvdatas['Cloth.csv']
             display_part_df = self.csvdatas['display_part.csv']
             # display_partのデータを使ってcloth_dfを更新
             for index, row in cloth_df.iterrows():
@@ -195,7 +195,7 @@ class CSVManager:
                     cloth_df.at[index, '表示部位NO'] = new_display_part_no
 
             # 更新されたDataFrameをcsvdatasに再代入
-            self.csvdatas['cloth.csv'] = cloth_df
+            self.csvdatas['Cloth.csv'] = cloth_df
         else:
             # 必要なファイルがない場合の処理
             print("load_display_part:ファイルが見つからないから、処理飛ばすぜ。バリアンとによっては関係ない処理だ")
