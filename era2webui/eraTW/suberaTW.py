@@ -1,9 +1,7 @@
-from eraTW.emo import Expression
-
-from module.sub import get_width_and_height
-from eraTW.cloth import get_cloth_dict
-from eraTW.cloth import ClothFlags
+from eraTW.cloth import ClothFlags, get_cloth_dict
+#from eraTW.emo import Expression
 from module.csv_manager import CSVMFactory
+from module.sub import get_width_and_height
 
 csvm = CSVMFactory.get_instance()
 class PromptMaker:
@@ -11,18 +9,18 @@ class PromptMaker:
         self.sjh = sjh
         self.erascene = self.sjh.get_save("scene") #sceneは色んなところで読み込むので先に読み込んどく
         self.prompt =    {"situation":"", "location":"", "weather":"","scene":"", "chara":"","cloth":"",\
-                         "train": "","emotion": "","stain": "","潤滑": "","effect": "",\
+                         "train": "","emotion": "","stain": "","潤滑": "","effect": "","eyes": "",\
                          "body": "","hair": ""}
         self.negative =  {"situation":"", "location":"", "weather":"","scene":"", "chara":"","cloth":"",\
-                         "train": "","emotion": "","stain": "","潤滑": "","effect": "",\
+                         "train": "","emotion": "","stain": "","潤滑": "","effect": "","eyes": "",\
                          "body": "","hair": ""}
         self.width = 0
         self.height = 0
-        self.flags = {"drawchara":0,"drawface":0,"drawbreasts":0,\
-                      "drawvagina":0,"drawanus":0}
+        self.flags = {"drawchara":1,"drawface":1,"drawbreasts":0,\
+                      "drawvagina":0,"drawanus":0,"主人公以外が相手":0} #テスト用にキャラと顔は明示的にOFFalseにしないと出る
         self.csv_files  = {"location":'Location.csv',"weather":'Weather.csv',"cloth":'Cloth.csv',\
                            "train":'Train.csv',"talent":'Talent.csv',"event":'Event.csv',\
-                           "equip":'Equip.csv',"chara":'Character.csv',"effect":'Effect.csv'}
+                           "equip":'Equip.csv',"chara":'Character.csv',"effect":'Effect.csv',"emotion":'Emotion.csv'}
 
     #テスト用 あとでなおす
     def generate_prompt(self):
@@ -31,8 +29,8 @@ class PromptMaker:
         self.create_weather_prompt()
 
         #表情ブレンダーはオーバーホールするまで暫定的にここへ
-        p,n = Expression(self.sjh,self.flags)
-        self.add_prompt("emotion", p, n)
+        #p,n = Expression(self.sjh,self.flags)
+        #self.add_prompt("emotion", p, n)
 
         if self.erascene == "TRAIN":
             self.create_train_prompt()
@@ -41,7 +39,7 @@ class PromptMaker:
                 self.create_equip_prompt()
                 self.create_chara_prompt()
                 self.create_body_prompt()
-                self.clothing()
+                #self.clothing()
             self.create_cum_prompt()
             if self.flags.get("drawvagina") ==1:
                 self.create_juice_prompt()
@@ -49,7 +47,7 @@ class PromptMaker:
             self.create_chara_prompt()
             self.create_body_prompt()
             self.create_train_prompt()
-            self.clothing()
+            #self.clothing()
 
         #辞書がからの箇所を消す
         prompt_values = [value for value in self.prompt.values() if value.strip()]
@@ -105,6 +103,10 @@ class PromptMaker:
 
 
     def create_situation_prompt(self):
+        eve = self.get_csvname("event")
+        #何はなくとも汎用調教のネガティブ入れる
+        nega = csvm.get_df(eve,"名称","汎用調教","ネガティブ")
+        self.add_prompt("situation", None, nega)
         if self.erascene == "ターゲット切替" or \
             self.erascene == "マスター移動":
 
@@ -464,11 +466,12 @@ class PromptMaker:
                         self.add_prompt("cloth", prompt, nega)
 
         for key, value in cloth_dict.items():
-            clothings = ["帽子", "アクセサリ", "腕部装束", "外衣", "上半身下着2", "下半身下着1", "その他1", "その他2", "その他3", "靴下", "靴"]
+            clothings = ["帽子", "アクセサリ", "腕部装束", "外衣", "上半身下着2",\
+                         "下半身下着1", "その他1", "その他2", "その他3", "靴下", "靴"]
             if key in clothings:
-                    prompt = csvm.get_df(clo,"衣類名", value, "プロンプト")
-                    nega = csvm.get_df(clo,"衣類名", value, "ネガティブ")
-                    self.add_prompt("cloth", prompt, nega)
+                prompt = csvm.get_df(clo,"衣類名", value, "プロンプト")
+                nega = csvm.get_df(clo,"衣類名", value, "ネガティブ")
+                self.add_prompt("cloth", prompt, nega)
 
         if nob: #ノーブラ
             prompt = csvm.get_df(clo,"衣類名","ノーブラ","プロンプト")

@@ -3,7 +3,7 @@ from module.csv_manager import CSVMFactory
 csvm = CSVMFactory.get_instance()
 
 # cloth.csvのDataFrameを取得
-cloth_df = csvm.csvdatas['cloth.csv']
+cloth_df = csvm.csvdatas['Cloth.csv']
 
 def get_cloth_name(position_no, equip_no_position):
     """
