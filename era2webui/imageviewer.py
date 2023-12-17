@@ -101,12 +101,12 @@ class App:
         self.observer_img.start()
         print("pngファイルの監視を開始しました。target_dir:" + str(self.wdog_sdimg_Path))
 
-    def stop(self):
-        #"""アプリケーションの停止関数"""
-        if self.is_running:
-            # 監視スレッドの停止
-            self.observer_img.stop()
-            self.observer_img.join()
+    # def stop(self):
+    #     #"""アプリケーションの停止関数"""
+    #     if self.is_running:
+    #         # 監視スレッドの停止
+    #         self.observer_img.stop()
+    #         self.observer_img.join()
 
 
     # フォルダ選択ダイアログの表示(画像監視フォルダ)

@@ -3,10 +3,10 @@ import os
 import random
 from eraImascgpro.emo import Expression
 import re
-from sub import get_df
-from sub import get_df_2key
-from sub import get_width_and_height
-from sub import chikan
+from module.sub import get_df
+from module.sub import get_df_2key
+from module.sub import get_width_and_height
+from module.sub import chikan
 
 # order自体を変化させる前処理
 # たとえば

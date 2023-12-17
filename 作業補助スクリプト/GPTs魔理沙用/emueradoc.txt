@@ -2507,3 +2507,6 @@ csvファイルで指定された全ての画像ファイルはEmueraの起動�
 コンフィグの描画インタフェースにWINAPIを指定している場合はGDIにより処理され、アルファブレンドは行われません。
 描画インタフェースがGraphics又はTextRendererの場合にはGDI+により処理され、アルファブレンドが行われます。
 拡大縮小もWINAPI(GDI)とGraphics又はTextRenderer(GDI+)`でやや異なります。
+
+
+

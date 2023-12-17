@@ -1,0 +1,37 @@
+e2wNo,状態,level,名前,プロンプト,ネガティブ
+,睡眠深度,0,目覚め,,
+,睡眠深度,1,まどろみ,,smile 
+,睡眠深度,2,睡眠,"(sleeping,closed eyes:1.2), ",smile 
+,睡眠深度,3,熟睡,"(sleeping,closed eyes:1.2), ",smile 
+,睡眠深度,4,昏睡,"(sleeping,closed eyes:1.2), ",smile 
+,睡眠深度,5,,,
+,睡眠深度,6,,,
+,快感Lv,0,,(blush:-0.4),
+,快感Lv,1,,(blush:0.7),
+,快感Lv,2,,"Orgasmic expression,(blush:0.9)",
+,快感Lv,3,,"Orgasmic expression,blush,",
+,快感Lv,4,,"(Orgasmic expression:1.2),blush",
+,体力Lv,0,死亡,,
+,体力Lv,1,瀕死,"(expressionless:1.3),(shadowy face:1.4),(half opened mouth:1.4)",
+,体力Lv,2,,"(sweat:1.4),Lots and lots of drips of sweat",
+,体力Lv,3,,"(sweat:1.3),Lots and lots of drips of sweat",
+,体力Lv,4,,"(sweat:1.2),Lots and lots of drips of sweat",
+,体力Lv,5,,"(sweat:1.0),steam",
+,気力Lv,0,,,
+,気力Lv,1,,"(she is utterly exhausted:1.3),sleepy",
+,酩酊LV,0,素面,,
+,酩酊LV,1,,,
+,酩酊LV,2,,"drunk,blush",
+,酩酊LV,3,,"(wasted,get  drunk:1.2),blush",
+,酩酊LV,4,,"(wasted,get  drunk:1.4),(blush)",
+,酩酊LV,5,,"(wasted,get  drunk:1.4),(expressionless:1.2),mind break,(blush)",
+,苦痛Lv,0,,,
+,苦痛Lv,1,,Groaning,
+,苦痛Lv,2,,"Squinting,closed eyes,clenched teeth","smile,open eyes,pupil"
+,苦痛Lv,3,,"(tears),open mouth",smile
+,恐怖Lv,0,,,
+,恐怖Lv,1,,She's scared,
+,恐怖Lv,2,,"She's scared, tears",
+,恐怖Lv,3,,"She's scared, (tears:1.4)",
+,恐怖Lv,4,,"She's scared, (tears:1.4), <lora:scaredExpression_v18:0.5>,scared expression",
+,恐怖Lv,5,,"She's scared, (tears:1.4), <lora:scaredExpression_v18:0.9>,scared expression",

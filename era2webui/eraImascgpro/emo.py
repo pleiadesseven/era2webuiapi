@@ -3,7 +3,7 @@ import numpy as np
 import os
 import random
 import pandas as pd
-from sub import get_df
+from module.sub import get_df
 
 # cgpro用の表情コード
 # 暫定でバリアント毎に分けたけど更新が面倒になるのでホントはまとめたい
