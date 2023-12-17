@@ -5,28 +5,64 @@ from module.sub import get_width_and_height
 
 csvm = CSVMFactory.get_instance()
 class PromptMaker:
+    """
+    このPromptMakerクラスは、eraTWゲームの状況に合わせたプロンプトを作るための強力なツールだぜ。
+    シナリオやキャラクターの状態に応じた、細かくカスタマイズされたテキストを生成するんだ。使い方を間違えないようにな！
+
+    Attributes:
+        sjh (SaveJSONHandler): ゲームのセーブデータを管理するインスタンス。これがないと始まらないぜ。
+        erascene (str): 現在のシーンを格納している。シーンによって生成するプロンプトが変わるから重要だ。
+        prompt (dict): シナリオに関連するプロンプトを格納する辞書。ここにデータを詰め込むんだ。
+        negative (dict): ネガティブなプロンプトを格納する辞書。時にはダークな面も見せる必要があるからな。
+        flags (dict): 描画に関する各種フラグを保持する辞書。どんなシーンを描くかはこれで決まるぜ。
+        csv_files (dict): CSVファイルの名前とそれに関連するキーを格納する辞書。データはここから引っ張るんだ。
+
+    Methods:
+        generate_prompt: 様々な条件に基づいてプロンプトを生成する。ここがこのクラスの肝だぜ。
+        他にもいろいろなメソッドがあるけど、詳細はコードを見てくれ。長くなるからここでは割愛するぜ。
+
+    このクラスを使って、どんなシナリオでも対応できるプロンプトを作り出せるぜ。使いこなせるかな？
+    """
     def __init__(self, sjh):
         self.sjh = sjh
         self.erascene = self.sjh.get_save("scene") #sceneは色んなところで読み込むので先に読み込んどく
-        self.prompt =    {"situation":"", "location":"", "weather":"","scene":"", "chara":"","cloth":"",\
-                         "train": "","emotion": "","stain": "","潤滑": "","effect": "","eyes": "",\
-                         "body": "","hair": ""}
-        self.negative =  {"situation":"", "location":"", "weather":"","scene":"", "chara":"","cloth":"",\
-                         "train": "","emotion": "","stain": "","潤滑": "","effect": "","eyes": "",\
-                         "body": "","hair": ""}
+        self.prompt =    {"situation":"", "location":"", "weather":"","scene":"",\
+                          "chara":"","cloth":"","train": "","emotion": "","stain": "",\
+                          "潤滑": "","effect": "","eyes": "", "body": "","hair": ""}
+        self.negative =  {"situation":"", "location":"", "weather":"","scene":"",\
+                          "chara":"","cloth":"", "train": "","emotion": "","stain": "",\
+                          "潤滑": "","effect": "","eyes": "", "body": "","hair": ""}
         self.flags = {"drawchara":1,"drawface":1,"drawbreasts":0,\
-            "drawvagina":0,"drawanus":0,"主人公以外が相手":0} #テスト用にキャラと顔は明示的にOFFalseにしないと出る
+            "drawvagina":0,"drawanus":0,"主人公以外が相手":0,"indoor":0} #テスト用にキャラと顔は明示的にOFFalseにしないと出る
         self.width = 0
         self.height = 0
         self.csv_files  = {"location":'Location.csv',"weather":'Weather.csv',"cloth":'Cloth.csv',\
                            "train":'Train.csv',"talent":'Talent.csv',"event":'Event.csv',\
-                           "equip":'Equip.csv',"chara":'Character.csv',"effect":'Effect.csv',"emotion":'Emotion.csv'}
+                           "equip":'Equip.csv',"chara":'Character.csv',"effect":'Effect.csv',\
+                           "emotion":'Emotion.csv'}
 
-    #テスト用 あとでなおす
+
     def generate_prompt(self):
+        """
+        このgenerate_promptメソッドは、elementsをギュッと集めて呪文を生成するんだ。
+        シチュエーション、ロケーション、天気、装備、キャラクターなど、色々な要素から呪文を組み立てていく。
+
+        屋内か屋外かで天気の扱いが変わるし、TRAINシーンかどうかで処理も変わるんだ
+        全部を合わせて、強力な呪文を作り上げるぜ。
+
+        Returns:
+            tuple: (prompt, negative, width, height)を返す。
+                - prompt (str): シナリオに基づいた呪文のテキスト。
+                - negative (str): 呪文のネガティブな面を表すテキスト。
+                - width (int), height (int): 生成する画像のサイズ。
+
+        このメソッドを使って、どんなシナリオにもバッチリ対応できる呪文を作れるぜ！
+        """
         self.create_situation_prompt()
         self.create_location_prompt()
-        self.create_weather_prompt()
+        #屋内なら天気は無し､昼夜もなしになるのであとで考える
+        if self.flags.get("indoor") == 1:
+            self.create_weather_prompt()
 
         #表情ブレンダーはオーバーホールするまで暫定的にここへ
         #p,n = Expression(self.sjh,self.flags)
@@ -49,7 +85,7 @@ class PromptMaker:
             self.create_train_prompt()
             #self.clothing()
 
-        #辞書がからの箇所を消す
+        #辞書が空の箇所を消す
         prompt_values = [value for value in self.prompt.values() if value.strip()]
         #カンマとスペースを足してヒトツナギに
         prompt = ", ".join(prompt_values)
@@ -64,14 +100,39 @@ class PromptMaker:
 
 
     def get_csvname(self, key):
+        """
+        指定されたキーに対応するCSVファイル名を引っ張ってくるメソッドだ。
+        必要なファイル名をサクッと探し出すんだぜ。
+        Args:
+            key (str): CSVファイル名を取得したいキー。ちゃんと正しいキーを渡すんだぜ！
+
+        Returns:
+            str: 指定されたキーに対応するCSVファイル名。もしキーがなければ、Noneを返すぜ。
+                正しいファイル名を取得できるかどうかは、お前の渡したキー次第だな！
+        """
         return self.csv_files.get(key)
 
 
     def add_prompt(self, elements, prompt, nega):
+        """
+        指定された要素に対してプロンプトやネガティブプロンプトを追加するんだ。
+        渡したエレメントが辞書に存在しない場合は、このメソッドが手痛いお仕置きをするから気をつけてくれよな！
+
+        Args:
+            elements (str): プロンプト要素のキーだ。辞書にあるキーを正しく渡すんだぜ。
+            prompt (str): 追加したいプロンプトのテキスト。Noneか'ERROR'じゃなければ追加するぜ。
+            nega (str): 追加したいネガティブプロンプトのテキスト。こっちもNoneか'ERROR'じゃなければ追加する。
+
+        Raises:
+            KeyError: '{elements}'がプロンプト辞書にないときに投げられる例外だ。ちゃんと辞書を確認してから使ってくれよな！
+            KeyError: ネガティブプロンプト辞書に'{elements}'がないときにも同じ例外が飛ぶぜ。こっちも確認しておくんだな！
+
+        このメソッドを使えば、お前の辞書に新しいプロンプトやネガティブプロンプトをサクッと追加できるぜ。
+        """
         if elements not in self.prompt:
             raise KeyError(f" '{elements}' なんてプロンプト要素、ないぜ！")
         if elements not in self.negative:
-            raise KeyError(f"ネガティブプロンプトに '{elements}' は存在しねぇ！")
+            raise KeyError(f"ネガティブプロンプトに '{elements}' は存在しない！")
 
         if prompt is not None and prompt != "ERROR":
             self.prompt[elements] += prompt
@@ -80,6 +141,15 @@ class PromptMaker:
 
 
     def update(self):
+        """
+        このupdateメソッドは、現在のゲーム状況に合わせてコマンド名を更新するために使うんだ。
+        特に、キャラクターの特徴や状況に応じてコマンドを差し替える処理を行う。
+
+        例えば、巨乳未満のキャラで'パイズリ'コマンドが使われた場合、それを'ナイズリ'に変更する。
+        また、着衣時の胸愛撫は別のコマンドに変える処理もあるぜ。
+
+        このメソッドは、SaveJSONHandlerのデータを適切に更新することで、シナリオのリアリティを高める役割を果たす。
+        """
         # SaveJSONHandler の class dict の更新などの処理
         # 条件によりコマンド差し替え（乳サイズでパイズリ→ナイズリ
         # キャラ差し替え　EXフラグが立っていたらEXキャラ用の名前に変更する
@@ -104,9 +174,17 @@ class PromptMaker:
 
 
     def create_situation_prompt(self):
-        eve = self.get_csvname("event")
-        #何はなくとも汎用調教のネガティブ入れる
-        nega = csvm.get_df(eve,"名称","汎用調教","ネガティブ")
+        """
+        このcreate_situation_promptメソッドは、現在のシナリオに合わせて状況のプロンプトを生成するんだ。
+        特に、ターゲットの切り替えやマスターの移動などのシーンに応じて、適切なプロンプトを組み立てるぜ。
+
+        基礎プロンプトのネガティブプロンプトは常に追加される。
+        さらに、シナリオがターゲット切替やマスター移動の場合、
+        特定の条件に基づいて異なるプロンプトを追加する。
+        """
+        efc = self.get_csvname("effect")
+        #何はなくとも基礎プロンプトのネガティブ入れる
+        nega = csvm.get_df(efc,"名称","基礎プロンプト","ネガティブ")
         self.add_prompt("situation", None, nega)
         if self.erascene == "ターゲット切替" or \
             self.erascene == "マスター移動":
@@ -120,6 +198,12 @@ class PromptMaker:
 
 
     def create_location_prompt(self):
+        """
+        現在のシナリオに合わせて、ロケーションに関するプロンプトを生成するメソッドだぜ。
+        CSVファイルからロケーションに関するデータを読み込み、適切なプロンプトとネガティブプロンプトを追加する。
+
+        ロケーションが屋内か屋外かもチェックして、フラグを設定するんだ。この情報は天気のプロンプトを生成するときにも使われるぜ。
+        """
         # 700箇所
         #IDとの整合はあとで確かめる
         master = self.sjh.get_save("現在位置")
@@ -129,9 +213,19 @@ class PromptMaker:
         self.add_prompt("location", prompt, nega)
         #室内外かはCSVに書いて
         doors = csvm.get_df(loc,"地名", master,"室内外")
+        if doors == "indoor":
+            self.flags["indoor"] = 1
         self.add_prompt("location", doors, None)
 
+
     def create_weather_prompt(self):
+        """
+        現在の天気に応じて、天気のプロンプトを生成するメソッドだぜ。
+        CSVファイルから天気データを読み込んで、適切なプロンプトとネガティブプロンプトを組み立てる。
+
+        さらに、時間に基づいて昼か夜かの情報をプロンプトに追加する。これで、シナリオのリアリティがさらに高まるぜ！
+
+        """
         天気 = self.sjh.get_save("天気")
         wea = self.get_csvname("weather")
         prompt = csvm.get_df(wea,"天気", 天気,"プロンプト")
@@ -155,6 +249,15 @@ class PromptMaker:
 
 
     def create_train_prompt(self):
+        """
+        このcreate_train_promptメソッドは、調教シーンのためのプロンプトを生成するんだ。
+        CSVファイルから読み込んだコマンド名に基づいて、適切なプロンプトとネガティブプロンプトを組み立てるぜ。
+
+        調教が成功したか失敗したかによって処理が分岐するから、それもしっかりチェックしてくれよな。
+        成功した場合は、CSVから読み込んだ情報に基づいてプロンプトを作成する。失敗した場合は、拒否プロンプトを使うんだ。
+
+        このメソッドを使えば、どんなトレーニングシーンにもぴったりなプロンプトを作り出せるぜ！
+        """
         tra = self.get_csvname("train")
         eve = self.get_csvname("event")
         com = self.sjh.get_save("コマンド名")
@@ -193,11 +296,15 @@ class PromptMaker:
             self.add_prompt("train", prompt, nega)
 
 
-    # 一時装備､SEXTOY､状況による変化
-    #tequipとしたほうがera変数との整合性で見やすいか? あとで見直す
-    # CSVを2列で検索する
-    #create_train_promptより必ず後で呼び出さないとフラグが無意味になる
     def create_equip_prompt(self):
+        """
+        このcreate_equip_promptメソッドは、現在のゲーム状況に合わせて装備品のプロンプトを生成するんだ。
+        CSVファイルから装備品に関するデータを読み込み、適切なプロンプトとネガティブプロンプトを追加するぜ。
+
+        装備品は、シーンの構図によって表示されるかどうかが変わる。
+        だから、描画フラグに基づいて装備品をスキップする処理も行うんだ。
+        こうすることで、シナリオのリアリティを高めることができるぜ！
+        """
         equ = self.get_csvname("equip.csv")
 
         N膣装備 = ["11","12","13","22"]
@@ -226,8 +333,16 @@ class PromptMaker:
 
 
     def create_stain_prompt(self):
+        """
+        このcreate_stain_promptメソッドは、特定の条件下での精液の付着を描写するプロンプトを生成するために使うんだ。
+        キャラクターの描画フラグに基づいて、適切なプロンプトを組み立てるぜ。
+
+        たとえば、キャラクターが描画される場合には、装備品のプロンプトも考慮に入れるんだ。
+        さらに、胸やヴァギナに精液が付着しているかどうかをチェックして、それに応じたプロンプトを追加する。
+        """
         # 付着した精液
         #装備 調教対象キャラが映るときのみ
+        #これは別モジュールに移したほうがいいかも
         if self.flags["drawchara"] == 1:
             self.create_equip_prompt()
 
@@ -243,6 +358,14 @@ class PromptMaker:
 
 
     def create_chara_prompt(self):
+        """
+        このcreate_chara_promptメソッドは、キャラクターの描画に関するプロンプトを生成するために使うんだ。
+        CSVファイルからキャラクターに関するデータを読み込み、適切なプロンプトとネガティブプロンプトを追加するぜ。
+
+        毎回記述されるキャラクターの基本的なプロンプトはEffect.csvから読み出す。
+        さらに、特別な名前でプロンプトを登録してある場合は、キャラクター描写を強制的に上書きする処理も行うんだ。
+
+        """
         cha = self.get_csvname("chara")
         efc = self.get_csvname("effect")
 
@@ -278,10 +401,18 @@ class PromptMaker:
 
 
     def create_cum_prompt(self):
+        """
+        このcreate_cum_promptメソッドは、射精箇所に基づいてプロンプトを生成するために使うんだ。
+        ビット演算を使って、どの射精箇所が選ばれているかを判定するぜ。
+
+        ビット演算ってのは、数字をビット単位で見て、特定のビットが立っているかどうかをチェックする方法だ。
+        たとえば、'射精箇所'がビットで示されていて、各ビットが特定の射精箇所を表しているんだ。
+        """
         射精箇所 = self.sjh.get_save("射精箇所")
         efc = self.get_csvname("effect")
         #;TFLAG:1 射精箇所 (ビット0=コンドーム 1=膣内 2=アナル 3=手淫 4=口淫 5=パイズリ 6=素股 7=足コキ 8=体表 9=アナル奉仕
         #なにこれ? → 20=手淫フェラ 21=パイズリフェラ22=シックスナイン 24=子宮口 25=疑似 26=授乳プレイ
+
         # チェックするビット位置のリスト
         ejaculation_places = {
                 1: "(cum in pussy,internal ejaculation)",
@@ -307,9 +438,16 @@ class PromptMaker:
 
 
     def create_juice_prompt(self):
+        """
+        このcreate_juice_promptメソッドは、キャラクターの潤滑状態に基づいてプロンプトを生成するんだ。
+        TRAINシーン限定で、ヴァギナ描画がonのときに使われるぜ。
+
+        潤滑度の値に基づいて、適切なプロンプトを追加するんだ。
+        たとえば、潤滑度が低い場合は特定のネガティブプロンプトを、潤滑度が高い場合はより具体的なプロンプトを追加する。
+        """
         #TRAIN限定のエフェクト
         # ヴァギナ描画onのとき
-        if self.flags["drawvagina"] == 1:
+        if self.flags["drawvagina"] == 1: #判定は別のメソッドに回す あとで
             # 潤滑度に基づいてプロンプトを追加
             潤滑度 = self.sjh.get_save("palam")["潤滑"]
             if 潤滑度 < 200:
@@ -324,6 +462,12 @@ class PromptMaker:
 
 
     def create_traineffect_prompt(self):
+        """
+        このcreate_traineffect_promptメソッドは、TRAINシーン限定の特定エフェクトに基づいてプロンプトを生成するために使うんだ。
+        CSVファイルからエフェクトに関するデータを読み込み、適切なプロンプトを追加するぜ。
+
+        破瓜の血や放尿など、特定の状況で発生するエフェクトを考慮に入れて、シナリオのリアリティを高めるプロンプトを作成するんだ。
+        """
         #TRAIN限定のエフェクト
         # エフェクト等 TFLAGは調教終了時には初期化されない。TRAINに限定しないと料理中に射精とかが起こる
         efc = self.get_csvname("effect")
@@ -344,10 +488,17 @@ class PromptMaker:
 
 
     def create_effect_prompt(self):
+        """
+        このcreate_effect_promptメソッドは、キャラクターの特定の状態や状況に基づいてプロンプトを生成するんだ。
+        CSVファイルからエフェクトに関するデータを読み込み、適切なプロンプトを追加するぜ。
+
+        たとえば、キャラクターが妊娠している場合、妊娠の進行度に応じて異なるプロンプトを追加するんだ。
+        これによって、シナリオのリアリティがさらに高まるぜ！
+        """
         efc = self.get_csvname("effect")
         if "妊娠" in self.sjh.get_save("talent"):
             # 標準で20日で出産する。残14日から描写し、残8日でさらに進行
-            if (self.sjh.get_save("出産日") - self.sjh.get_save("日付")) in range(8,14):
+            if self.sjh.get_save("出産日") - self.sjh.get_save("日付") in range(8,14):
                 prompt = csvm.get_df(efc,"名称","妊娠中期","プロンプト")
             elif (self.sjh.get_save("出産日") - self.sjh.get_save("日付")) <= 8:
                 prompt = csvm.get_df(efc,"名称","妊娠後期","プロンプト")
@@ -355,6 +506,12 @@ class PromptMaker:
 
 
     def create_eyes_prompt(self):
+        """
+        このcreate_eyes_promptメソッドは、キャラクターの目の色に基づいてプロンプトを生成するんだ。
+        CSVファイルからキャラクターの目の色に関するデータを読み込み、適切なプロンプトを追加するぜ。
+
+        キャラクターの目の色は、そのキャラクターの個性や雰囲気を伝える重要な要素だから、しっかりと反映させるんだ。
+        """
         #目の色をクラス辞書に追記しておく
         cha = self.get_csvname("chara")
         prompt = csvm.get_df(cha,"キャラ名",self.sjh.get_save("target"),"目の色")
@@ -363,6 +520,15 @@ class PromptMaker:
 
 
     def create_body_prompt(self):
+        """
+        このcreate_body_promptメソッドは、キャラクターの体の特徴に基づいてプロンプトを生成するために使うんだ。
+        CSVファイルから体の特徴に関するデータを読み込み、適切なプロンプトを追加するぜ。
+
+        乳サイズや体格、体型など、キャラクターの特徴をしっかりと表現するプロンプトを組み立てるんだ。
+        特に、普通の乳サイズなのに誤って巨乳と描写されることを避けるための工夫もしているぜ！
+
+        このメソッドを使えば、キャラクターの体の特徴を効果的に表現できるぜ！
+        """
         tal = self.get_csvname("talent")
 
         # 乳サイズ
@@ -379,7 +545,7 @@ class PromptMaker:
                 if tal in self.sjh.get_save("talent"):
                     prompt = csvm.get_df(tal,"名称",tal,"プロンプト")
                     nega = csvm.get_df(tal,"名称",tal,"ネガティブ")
-                    nega += ", areolae, nipple" #negaが空白だった時用対策
+                    nega += "areolae, nipple" #negaが空白だった時用対策
                     self.add_prompt("body", prompt, nega)
 
         # 体格、体型
@@ -389,7 +555,6 @@ class PromptMaker:
                 prompt = csvm.get_df(tal,"名称",tal,"プロンプト")
                 nega = csvm.get_df(tal,"名称",tal,"ネガティブ")
                 self.add_prompt("body", prompt, nega)
-
 
         # 胸愛撫など、普通乳なのに巨乳に描かれがちなコマンドのときプロンプトにsmall breastsを付加する
         chk_list = ["爆乳","巨乳","貧乳","絶壁"]
@@ -402,6 +567,13 @@ class PromptMaker:
 
 
     def create_hair_prompt(self):
+        """
+        このcreate_hair_promptメソッドは、キャラクターの髪型に基づいてプロンプトを生成するために使うんだ。
+        CSVファイルから髪型に関するデータを読み込み、適切なプロンプトを追加するぜ。
+
+        長髪、セミロング、ショートカット、ツインテールなど、さまざまな髪型を考慮に入れる。
+        髪型はキャラクターの個性を表現するのに重要な要素だから、しっかりと反映させるんだ。
+        """
         tal = self.get_csvname("talent")
         talents = ["長髪","セミロング","ショートカット","ポニーテール","ツインテール",\
                    "サイドテール","縦ロール","ツインリング","三つ編み","短髪","おさげ髪",\
@@ -416,6 +588,14 @@ class PromptMaker:
 
     # 解像度をcsvから読む
     def get_kaizoudo(self):
+        """
+        あとでアスペクト比を基に可変できるようにする
+        このget_kaizoudoメソッドは、シーンに応じて解像度をCSVファイルから読み込むために使うんだ。
+        TRAINシーンとその他のEVENTシーンで読み取るCSVが異なるから、条件分岐を使って適切なCSVを選択するぜ。
+
+        TRAINシーンの場合はTrain.csvから、その他のEVENTシーンの場合はEvent.csvから解像度を取得するんだ。
+        解像度は、画像生成における品質を決定する重要な要素だから、正確に取得することが大事だぜ！
+        """
         # TRAINとその他のEVENTで読み取るcsvが異なる
         if self.erascene == "TRAIN":
             tra = self.get_csvname("train")
@@ -429,6 +609,14 @@ class PromptMaker:
 
     # 服装
     def clothing(self):
+        """
+        このclothingメソッドは、キャラクターの装備や服装に基づいてプロンプトを生成するために使うんだ。
+        CSVファイルから服装に関するデータを読み込み、適切なプロンプトを追加するぜ。
+
+        ノーパンやノーブラの判定、露出状態の判定も行う。服装はシナリオの雰囲気やキャラクターの個性を伝える重要な要素だから、しっかりと反映させるんだ。
+
+        注意：このメソッドはまだ未完成だ。いつか俺たちで完成させるぜ！
+        """
         clo = self.get_csvname("cloth")
 
         #グラグの処理はクラスにまとめる
@@ -511,10 +699,11 @@ class PromptMaker:
             if self.sjh.get_save("下半身下着2") != 0:
                 self.add_prompt("cloth", "(pantie aside)", None)
 
-        # キャラ描写の前にBREAKしておく？これいいのか悪いのかわからぬ
-        # prompt += "BREAK,"
 
     def prompt_debug(self):
+        """
+        生成前にどんな要素を格納されてるか調べるやつ
+        """
         for key, value in self.prompt.items():
             print (f'prompt:::{key}:::{value}')
         for key, value in self.negative.items():
@@ -525,26 +714,5 @@ class PromptMaker:
 
 
 
-    #     #表情ブレンダー
-    #     p,n = Expression(sjh,flags)
-    #     prompt += p
-    #     negative += n
-    # #ここまでキャラ描画フラグがonのときの処理
-
-
-
-    # # 置換機能の関数を呼ぶ
-    # # プロンプト中に%で囲まれた文字列があれば置換する機能
-    # # 失敗するとErrorというプロンプトが残る
-    # prompt = csvm.chikan(prompt)
-    # negative = csvm.chikan(negative)
-
-
-    # # 重複カンマを1つにまとめる
-    # prompt = re.sub(',+',',',prompt)
-    # negative = re.sub(',+',',',negative)
-
-    # return prompt,negative,gen_width,gen_height
-# *********************************************************************************************************
-# ----------ここまでpromptmaker----------------------------------------------------------------------------------
-# *********************************************************************************************************
+    #あとで emomoduleのオーバーホール     #表情ブレンダー
+    
