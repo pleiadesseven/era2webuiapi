@@ -14,10 +14,10 @@ class PromptMaker:
         self.negative =  {"situation":"", "location":"", "weather":"","scene":"", "chara":"","cloth":"",\
                          "train": "","emotion": "","stain": "","潤滑": "","effect": "","eyes": "",\
                          "body": "","hair": ""}
+        self.flags = {"drawchara":1,"drawface":1,"drawbreasts":0,\
+            "drawvagina":0,"drawanus":0,"主人公以外が相手":0} #テスト用にキャラと顔は明示的にOFFalseにしないと出る
         self.width = 0
         self.height = 0
-        self.flags = {"drawchara":1,"drawface":1,"drawbreasts":0,\
-                      "drawvagina":0,"drawanus":0,"主人公以外が相手":0} #テスト用にキャラと顔は明示的にOFFalseにしないと出る
         self.csv_files  = {"location":'Location.csv',"weather":'Weather.csv',"cloth":'Cloth.csv',\
                            "train":'Train.csv',"talent":'Talent.csv',"event":'Event.csv',\
                            "equip":'Equip.csv',"chara":'Character.csv',"effect":'Effect.csv',"emotion":'Emotion.csv'}
@@ -59,6 +59,7 @@ class PromptMaker:
         height = self.height
         prompt = csvm.chikan(prompt)
         negative = csvm.chikan(negative)
+        self.prompt_debug()
         return prompt,negative,width,height
 
 
@@ -126,7 +127,9 @@ class PromptMaker:
         prompt = csvm.get_df(loc,"地名", master,"プロンプト")
         nega = csvm.get_df(loc,"地名", master,"ネガティブ")
         self.add_prompt("location", prompt, nega)
-
+        #室内外かはCSVに書いて
+        doors = csvm.get_df(loc,"地名", master,"室内外")
+        self.add_prompt("location", doors, None)
 
     def create_weather_prompt(self):
         天気 = self.sjh.get_save("天気")
@@ -186,6 +189,8 @@ class PromptMaker:
                 self.flags["drawanus"] = csvm.get_df(eve,"名称","汎用調教","アナル描画")
 
                 self.add_prompt("train", prompt, nega)
+            nega = csvm.get_df(tra,"コマンド名",com,"ネガティブ")
+            self.add_prompt("train", prompt, nega)
 
 
     # 一時装備､SEXTOY､状況による変化
@@ -509,9 +514,13 @@ class PromptMaker:
         # キャラ描写の前にBREAKしておく？これいいのか悪いのかわからぬ
         # prompt += "BREAK,"
 
-
-
-
+    def prompt_debug(self):
+        for key, value in self.prompt.items():
+            print (f'prompt:::{key}:::{value}')
+        for key, value in self.negative.items():
+            print (f'nega:::{key}:::{value}')
+        for key, value in self.flags.items():
+            print (f'flags:::{key}:::{value}')
 
 
 
