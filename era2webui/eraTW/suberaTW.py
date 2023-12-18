@@ -371,12 +371,13 @@ class PromptMaker:
 
         # キャラ描写で毎回記述するプロンプト Effect.csvから読み出す
         charabase = csvm.get_df(efc,"名称","人物プロンプト","プロンプト")
-        self.add_prompt("chara", charabase, "")
+        charabase = charabase + ", " #charaキーで辞書に格納する時カンマ スペースが入らないのでここで足す
+        self.add_prompt("chara", charabase, None)
 
         # 特別な名前でプロンプトを登録してある場合、キャラ描写を強制的に上書きする処理
         uwagaki = csvm.get_df(cha,"キャラ名","描画キャラ上書き","プロンプト")
         if uwagaki != "ERROR": #EROORじゃなかったら上書き
-            prompt = f"\({uwagaki}\)"
+            prompt = f"({uwagaki})"
             nega = csvm.get_df(cha,"キャラ名","描画キャラ上書き","ネガティブ")
             self.add_prompt("chara", prompt, nega)
 
@@ -387,9 +388,7 @@ class PromptMaker:
             prompt_wait = csvm.get_df(cha,"キャラ名",name,"プロンプト強調")
             # prompt_waitが"ERROR"でない場合にのみ結合する
             if prompt_wait != "ERROR":
-                prompt = f"\({prompt}:{prompt_wait}\)"
-            elif prompt != "ERROR":
-                prompt = f"\({prompt}\)"
+                prompt = f"({prompt}:{prompt_wait})"
             self.add_prompt("chara", prompt, None)
 
             prompt2 = csvm.get_df(cha,"キャラ名",name,"プロンプト2")
@@ -615,7 +614,7 @@ class PromptMaker:
 
         ノーパンやノーブラの判定、露出状態の判定も行う。服装はシナリオの雰囲気やキャラクターの個性を伝える重要な要素だから、しっかりと反映させるんだ。
 
-        注意：このメソッドはまだ未完成だ。いつか俺たちで完成させるぜ！
+        注意：このメソッドはまだ未完成だ。いつか完成させるぜ！
         """
         clo = self.get_csvname("cloth")
 
@@ -642,7 +641,7 @@ class PromptMaker:
                 if key in clothings:
                     prompt = csvm.get_df(clo,"衣類名", value, "プロンプト")
                     if prompt != "ERROR":
-                        prompt = f"(wearing{prompt}:1.3)"
+                        prompt = f"(wearing {prompt}:1.3)"
                         nega = csvm.get_df(clo,"衣類名", value, "ネガティブ")
                         self.add_prompt("cloth", prompt, nega)
 
@@ -654,7 +653,7 @@ class PromptMaker:
                 if key in clothings:
                     prompt = csvm.get_df(clo,"衣類名", value, "プロンプト")
                     if prompt != "ERROR":
-                        prompt = f"(wearing{prompt}:1.3)"
+                        prompt = f"(wearing {prompt}:1.3)"
                         nega = csvm.get_df(clo,"衣類名", value, "ネガティブ")
                         self.add_prompt("cloth", prompt, nega)
 
@@ -675,7 +674,7 @@ class PromptMaker:
             if self.sjh.get_save("上半身下着2") != 0:
                 prompt = csvm.get_df(clo,"衣類名",self.sjh.get_save("upper_underwear"),"プロンプト")
                 if prompt != "ERROR":
-                    prompt = f"(wearing{prompt}:1.3)"
+                    prompt = f"(wearing {prompt}:1.3)"
                     nega = csvm.get_df(clo,"衣類名", value, "ネガティブ")
                     self.add_prompt("cloth", prompt, nega)
 
@@ -687,7 +686,7 @@ class PromptMaker:
             if self.sjh.get_save("上半身下着2") != 0:
                 prompt = csvm.get_df(clo,"衣類名",self.sjh.get_save("upper_underwear"),"プロンプト")
                 if prompt != "ERROR":
-                    prompt = f"(wearing{prompt}:1.3)"
+                    prompt = f"(wearing {prompt}:1.3)"
                     nega = csvm.get_df(clo,"衣類名", value, "ネガティブ")
                     self.add_prompt("cloth", prompt, nega)
 
