@@ -41,6 +41,36 @@ class PromptMaker:
                            "equip":'Equip.csv',"chara":'Character.csv',"effect":'Effect.csv',\
                            "emotion":'Emotion.csv'}
 
+    def initialize_class_variables(self):
+        # 判定につかうセーブデータをクラス変数内にしまう専用のメソッド
+        # 判定に必要なSaveデータをinitで全部先に取得すると読みにくので分離だ
+        self.scene  = self.sjh.get_save("scene")#str
+        self.charno = self.sjh.get_save("キャラ固有番号")#int
+        self.name   = self.sjh.get_save("target") #list ターゲット名
+        self.comno  = self.sjh.get_save("コマンド")#int
+        self.com    = self.sjh.get_save("コマンド名")#str
+        self.talent = self.sjh.get_save("talent") #list
+        self.upwear = self.sjh.get_save("上半身着衣状況")#int
+        self.loca   = self.sjh.get_save("現在位置")#str
+        self.season = self.sjh.get_save("月")#str
+        self.weath  = self.sjh.get_save("天気")#str
+        self.days   = self.sjh.get_save("日付")#int
+        self.time   = self.sjh.get_save("時間")#int
+        self.succ   = self.sjh.get_save("success")#int  eraTW -1:失敗 1:成功
+        self.tequip = self.sjh.get_save("tequip")#dict
+        self.bstain = self.sjh.get_save("胸の汚れ")
+        self.cip    = self.sjh.get_save("膣内射精フラグ")#int (boole
+        self.cump   = self.sjh.get_save("射精箇所")    #cum point
+        self.mcum   = self.sjh.get_save("MASTER射精量") #int
+        self.juice  = self.sjh.get_save("palam")["潤滑"] #int
+        self.lostv  = self.sjh.get_save("処女喪失") #int (boole
+        self.b      = self.sjh.get_save("今回の調教で処女喪失") #int (boole bは何のbだ? AI魔理沙にいい変数名無い?って聞けない
+        self.nyo    = self.sjh.get_save("放尿") #int (boole
+        self.nyu    = self.sjh.get_save("噴乳") #int (boole
+        self.birth  = self.sjh.get_save("出産日")#int
+        self.upwear = self.sjh.get_save("上半身着衣状況")#int
+        #衣装関係はあとで
+
 
     def generate_prompt(self):
         """
@@ -495,7 +525,7 @@ class PromptMaker:
         これによって、シナリオのリアリティがさらに高まるぜ！
         """
         efc = self.get_csvname("effect")
-        if "妊娠" in self.sjh.get_save("talent"):
+        if "妊娠" in self.talent:
             # 標準で20日で出産する。残14日から描写し、残8日でさらに進行
             if self.sjh.get_save("出産日") - self.sjh.get_save("日付") in range(8,14):
                 prompt = csvm.get_df(efc,"名称","妊娠中期","プロンプト")
