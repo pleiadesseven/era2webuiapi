@@ -9,7 +9,7 @@ Returns:
 """
 import sys
 import json
-
+import unicodedata
 
 class SJHFactory:
     """
@@ -80,7 +80,8 @@ class SaveJSONHandler:
         `self.data` のデータ型を必要に応じて変換する。
         """
         # `self.data` を再帰的に辿って型を変換する
-        self.data = self._cast_recursive(self.data)
+        self.data = self._cast_recursive(self.data) #数字だけのstrをint
+        self.data = self._convert_to_halfwidth_recursive(self.data) #全角英字を半角英字
 
     def _cast_recursive(self, data):
         """
@@ -101,6 +102,25 @@ class SaveJSONHandler:
         else:
             return data  # 他の型はそのまま返す
 
+    def _convert_to_halfwidth_recursive(self, data):
+        """
+        全角英字が含まれる文字列を半角英字に変換したデータを返す再帰的な補助関数。
+        文字列が全角英字を含んでいれば、それを半角英字に変換する。
+        """
+        if isinstance(data, dict):
+            new_dict = {}
+            for key, value in data.items():
+                new_key = self._convert_to_halfwidth_recursive(key)
+                new_dict[new_key] = self._convert_to_halfwidth_recursive(value)
+            return new_dict
+        elif isinstance(data, list):
+            return [self._convert_to_halfwidth_recursive(item) for item in data]
+        elif isinstance(data, str):
+            return unicodedata.normalize('NFKC', data)  # 全角英字を半角英字に変換
+        else:
+            return data  # 他の型はそのまま返す
+
+# このメソッドを使って全角英字を含むデータ構造を半角英字に変換する
 
     def update_data(self, key, new_value):
         """
@@ -134,7 +154,8 @@ class SaveJSONHandler:
             print('エラー: JSONファイルが読み込まれていません。')
             return None
         if key not in self.data:
-            print(f'エラー: キー "{key}" はデータに存在しません。')
+            #デバッグ用 好みでコメントアウト
+            print(f'エラー: 今は "{key}"って状況にないみたいだぜ')
             return None
         return self.data.get(key)
     

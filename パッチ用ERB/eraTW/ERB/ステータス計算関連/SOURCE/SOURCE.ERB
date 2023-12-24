@@ -8,7 +8,7 @@
 #DIM PLAYER体位保存
 #DIM PLAYERＶセックス保存
 #DIM PLAYERＡセックス保存
-#DIMS ゴム 
+#DIMS ゴム
 #DIM 中毒補正
 VARSET LOCAL
 SELECTCOM = TFLAG:3
@@ -292,7 +292,7 @@ FOR LOCAL,0,CHARANUM
 		CONTINUE
 	;その他系ソース計算処理
 	CALL SOURCE_CVAB_EXTRA(LOCAL)
-	
+
 	BASE:LOCAL:勃起 = BASE:LOCAL:勃起 + CUP:LOCAL:快Ｃ / 5 + CUP:LOCAL:快Ｖ / 10 + CUP:LOCAL:快Ａ / 10 + CUP:LOCAL:快Ｂ / 10
 	;-------------------------------------------------
 	;絶頂処理
@@ -363,7 +363,7 @@ FOR LOCAL,0,CHARANUM
 	;屈従のソース
 	;-------------------------------------------------
 	CALL SOURCE_屈従(LOCAL)
-	
+
 	;-------------------------------------------------
 	;歓楽のソース
 	;-------------------------------------------------
@@ -400,7 +400,7 @@ FOR LOCAL,0,CHARANUM
 	;加虐のソース
 	;-------------------------------------------------
 	CALL SOURCE_加虐(LOCAL)
-	
+
 	;-------------------------------------------------
 	;不潔のソース
 	;-------------------------------------------------
@@ -784,7 +784,7 @@ FOR LOCAL,0,CHARANUM
 			SETCOLOR C_YELLOW
 			SIF DOWNBASE:LOCAL:体力 > 150
 				SETCOLOR C_RED
-			PRINTFORM 体力-{DOWNBASE:LOCAL:体力} 
+			PRINTFORM 体力-{DOWNBASE:LOCAL:体力}
 		ELSE
 			SETCOLOR C_GREEN
 			PRINTFORM 体力+{-DOWNBASE:LOCAL:体力}
@@ -796,7 +796,7 @@ FOR LOCAL,0,CHARANUM
 			SETCOLOR C_YELLOW
 			SIF DOWNBASE:LOCAL:気力 > 150
 				SETCOLOR C_RED
-			PRINTFORM 気力-{DOWNBASE:LOCAL:気力} 
+			PRINTFORM 気力-{DOWNBASE:LOCAL:気力}
 		ELSE
 			SETCOLOR C_GREEN
 			PRINTFORM 気力+{-DOWNBASE:LOCAL:気力}
@@ -813,7 +813,7 @@ SIF TIME_PROGRESS(TIME:1) > 0 && SELECTCOM != 400 && SELECTCOM != 402 && SELECTC
 SIF TIME_PROGRESS(TIME:1) >= 40
 	TCVAR:TARGET:なるべく動かない = 1
 CALL OUTPUT_TXT("TRAIN")
-PRINTL 
+PRINTL
 
 ;-------------------------------------------------
 ;パラメータの上昇＆表示（DOWNもここで）
@@ -953,8 +953,6 @@ IF TFLAG:102 == 3 && TFLAG:抱きつきモード
 		TCVAR:抱きつき禁止時間 = 90 + MAX(10 - ABL:欲望, 0) * 3 - MAX((CFLAG:積極性 + CFLAG:恥じらい) * 5, 30)
 	ENDIF
 ENDIF
-
-CALL OUTPUT_TXT("TRAIN")
 
 ;-------------------------------------------------
 ;変数のリセット

@@ -28,5 +28,3 @@
 <lora:lcm-lora-sdv1-5:0.3>,<lora:flat2:-0.7>
 ;チンコが書かれやすくなる
 [SL]<lora:e2w-v05-000005:[0.8]:1:lbw=1,0,0.5,1,0,0,1,0,0,0,0.5,0.5,0.5,0.5,0.5,0.5,1,1,1,0.5,0.5,1,1,0.5,0,0.5>,eratoho
-extremely detailed CG unity 8k wallpaper,best quality
-__cameras__

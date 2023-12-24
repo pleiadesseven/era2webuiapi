@@ -86,9 +86,15 @@ ERB\SOURCE.ERB
 
 
 ERB\imas.erb
+真名看破時に立ち絵フラグを立てる文を追加
+　このファイルを上書きするパッチ
+　・私家改造版Ver0.54用パッチまとめv2.2.0
+　・eraIm@scgpro私家版0.54用感覚追加パッチ
 
-	@真名看破(ARG)
-	;上の逆
+ERB\imas.erb
+
+@真名看破(ARG)
+;上の逆
 
 NAME:ARG = %CSTR:ARG:フルネーム%
 CALLNAME:ARG = %CSTR:ARG:呼び名%

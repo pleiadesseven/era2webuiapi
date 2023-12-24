@@ -17,7 +17,11 @@
 15,咲夜,"izayoi sakuya,silver hair",,,,,,
 16,レミリア,"remilia scarlet,zun hat",,,,"(pink hair),red hair",,
 17,アリス,"alice margatroid,blonde hair,headband",,,,"(tied hair),(twintails),bunny ears headband,animal ears",,
+<<<<<<< HEAD
 18,リリーＷ,"touhou, (Lily White:1.3),blonde hair,(white cape with big ribbon),white hat with red ribbon,white cloth,fairy wings",,,,,,安定しない。名前で要素を拾ってくれてる気がしない
+=======
+18,リリーW,"touhou, (Lily White:1.3),blonde hair,(white cape with big ribbon),white hat with red ribbon,white cloth,fairy wings",,,,,,安定しない。名前で要素を拾ってくれてる気がしない
+>>>>>>> pulleq
 19,リリーB,Lily Black,,,,,,
 20,リリカ,"Lyrica Prismriver,Lyrica,brown hair,white collared shirt,long sleeves,red vest",,,,ribbon,brown,キャラ名は全く効かない。茶髪赤服の女でしかない
 21,メルラン,"Merlin Prismriver,Merlin,white blue hair,Bedhead,(wavy hair:1.2),waby bangs, pink vest, white collared shirt,long sleeves,",,,,ribbon,blue,髪型無理。服もかなり無理がある
@@ -68,7 +72,11 @@
 66,幽々子,"saigyouji yuyuko,pink hair,zun hat",,,,blue hair,,
 67,慧音,"Kamishirasawa Keine,silver hair,blue headwear with red ribbon,blue clothes",,,,"tied hair,twintail",,惜しいところまで来てるが別人になりやすい
 68,幽香,"Kazami Yuuka,green hair,red plaid vest,long sleeves",,,,,,髪は安定、服は指定しないと裸族だがred plaidでそれらしいのを着る。若干違う感はある
+<<<<<<< HEAD
 69,マミゾウ,Futatsuiwa Mamizou ,,,,,,
+=======
+69,マミゾウ,Futatsuiwa Mamizou,,,,,,
+>>>>>>> pulleq
 70,小鈴,"Motoori Kosuzu,kosuzu,checkered kimono ,checkered clothes,hair bell, yellow apron",,,,,,
 71,針妙丸,Sukuna Shinmyoumaru,,,,,,
 72,永琳,"(Yagokoro Eirin),silver hair,long sigle braid,blue nurse cap",,,,,,服装が無理
