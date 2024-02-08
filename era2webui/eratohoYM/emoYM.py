@@ -2,16 +2,17 @@ from module.emo import Expression
 from module.csv_manager import CSVMFactory
 csvm = CSVMFactory.get_instance()
 # 表情ブレンダー
-# 表情のプロンプトは実行中に弄りたいのでいつかcsv化する
 
 # 様々な表情の単語をブレンドしても良い顔ができない上に構図や絵柄に深刻な悪影響があることがわかった。
 # 要素ごとにプロンプトを追加していくやり方ではすぐ限界が来る。
+# TODO:高レベルの感情を優先的にプロンプトに加えて低レベルの感情を排除するようにするようにしたらどうか?
 
 
 class ExpressionYM(Expression):
     def __init__(self, sjh):
         super().__init__(sjh)
         self.initialize_class_variables_emoYM()
+        self.emolevels()#スーパークラスのLv決定はサブクラスの独自変数を定義後でないとエラーが出る
         self.emolevelsYM()
 
     def initialize_class_variables_emoYM(self):
@@ -21,20 +22,21 @@ class ExpressionYM(Expression):
         self.eyecolor = self.sjh.get_save("eyecolor")#int
         self.equip = self.sjh.get_save("equip")#dict
         self.player = self.sjh.get_save("PLAYER")#int
-        self.睡眠深度 = self.sjh.get_save("睡眠深度")
+        self.睡眠薬 = self.sjh.get_save("睡眠薬")
         self.abl = self.sjh.get_save("abl")#dict
         self.palam = self.sjh.get_save("palam")#dict
         self.palam_up = self.sjh.get_save("palam_up")#dict
         self.max_hp = self.sjh.get_save("最大体力")
         self.current_hp = self.sjh.get_save("体力")
         self.current_mp = self.sjh.get_save("気力")
+        self.絶頂の強度 = self.sjh.get_save("絶頂の強度")
 
         # 酔いの値を取得。存在しない場合は0とする
         self.drunk = self.sjh.get_save("酔い") if self.sjh.get_save("酔い") is not None else 0
         self.C = self.sjh.get_save("C絶頂")
         self.B = self.sjh.get_save("B絶頂")
-        self.V = self.sjh.get_save("B絶頂")
-        self.A = self.sjh.get_save("B絶頂")
+        self.V = self.sjh.get_save("V絶頂")
+        self.A = self.sjh.get_save("A絶頂")
         self.mark = self.sjh.get_save("mark")
         self.好感度 = self.sjh.get_save("好感度")
 
@@ -153,8 +155,7 @@ class ExpressionYM(Expression):
             self.emolevel["快感Lv"] = 4
 
         #別の値をつけているが､似たようなステータスなので
-        if self.sjh.get_save("絶頂の強度") is not None:
-            self.emolevel["快楽強度"] = self.sjh.get_save("絶頂の強度") 
+        self.emolevel["快楽強度"] = self.絶頂の強度
 
 
     def check_hp_level(self):
@@ -164,7 +165,7 @@ class ExpressionYM(Expression):
         # 体力が減ると汗をかく
         # 現在地が閾値より低い または MAXから〇〇以上減ってる
 
-        damage =self. max_hp - self.current_hp
+        damage =self.max_hp - self.current_hp
         if damage > 50:
             if self.current_hp < 700:
                 self.emolevel["体力Lv"] = 1
@@ -188,7 +189,7 @@ class ExpressionYM(Expression):
 
 
     def create_mp_element(self):
-        """独自
+        """オーバーライド
         #気力がないとぐったりする
         """
         if self.current_mp < 100:
