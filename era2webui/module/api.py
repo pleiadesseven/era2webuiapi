@@ -90,8 +90,3 @@ async def gen_image_api(prompt, negative, gen_width, gen_height):
             # ステータスが200以外エラー表示
             print(f"エラー：APIがステータスコード{results.status_code}で応答しました")
             return False
-
-        else:
-            # ステータスが200以外エラー表示
-            print(f"エラー：APIがステータスコード{results.status_code}で応答しました")
-            return False
