@@ -9,16 +9,13 @@ Returns:
 """
 from eraTW.cloth import ClothFlags, get_cloth_dict
 from module.csv_manager import CSVMFactory
-from module.sub import get_width_and_height
 from module.promptmaker import PromptMaker
 from eraTW.emoTW import ExpressionTW
 import random
 csvm = CSVMFactory.get_instance()
 class PromptMakerTW(PromptMaker):
     """
-    # module.promptmaker をスーパークラスとしてるが全部オーバーライド
-    # あとで
-    
+
     このPromptMakerクラスは、eraTWゲームの状況に合わせたプロンプトを作るための強力なツールだぜ。
     シナリオやキャラクターの状態に応じた、細かくカスタマイズされたテキストを生成するんだ。使い方を間違えないようにな！
 
@@ -38,7 +35,6 @@ class PromptMakerTW(PromptMaker):
     """
     def __init__(self, sjh):
         self.sjh = sjh
-        self.initialize_class_variables()#判定に必要なセーブデータを一括取得 #0 or 1はBoolにするかも
         self.prompt =    {"situation":"", "location":"", "weather":"", "timezone":"", "scene":"",\
                           "chara":"","cloth":"","train": "","emotion": "","stain": "","activity":"",\
                           "潤滑": "","effect": "", "body": "","hair": "","event":"","item":""}
@@ -129,7 +125,6 @@ class PromptMakerTW(PromptMaker):
             if self.com in ["仕事を手伝う","会話","お茶を淹れる","時間停止"]:
                 self.create_activity_element()
 
-            
         if self.scene == "パンツをくすねる":
             self.create_panty_element()
 
@@ -143,8 +138,8 @@ class PromptMakerTW(PromptMaker):
             self.create_chara_element() #キャラ
             self.create_body_element()  #体
             self.create_effect_element()#妊娠
-            #self.create_clothing_element() #未完成につきコメントアウト
-            self.create_clothing_element_simplified() #暫定的に、デフォルト衣装にしか対応できない版。
+            self.create_clothing_element() #服
+            #self.create_clothing_element_simplified() #暫定的に、デフォルト衣装にしか対応できない版。
 
         if self.flags["drawface"]:  # 顔を描画しない場合は処理をスキップ
             self.create_hair_element()#髪
@@ -227,7 +222,7 @@ class PromptMakerTW(PromptMaker):
         # 着衣時の胸愛撫はCHAKUMOMIのLoraを適用
         if self.upwear != 0:
             if self.com == "胸愛撫":
-                self.com = "着衣胸愛撫"            
+                self.com = "着衣胸愛撫"
             if self.com == "胸揉み":
                 self.com = "着衣胸揉み"
 
@@ -601,7 +596,7 @@ class PromptMakerTW(PromptMaker):
             elif (self.birth - self.days) <= 8:
                 prompt = csvm.get_df(efc,"名称","妊娠後期","プロンプト")
             self.add_element("effect", prompt, None)
-        
+
         if self.sjh.get_save("時間停止") != 0:
             prompt = csvm.get_df(efc,"名称","時間停止","プロンプト")
             nega = csvm.get_df(efc,"名称","時間停止","ネガティブ")
@@ -720,79 +715,77 @@ class PromptMakerTW(PromptMaker):
         #TARGETの現在の装備一覧 dict
         cloth_dict = get_cloth_dict(self.sjh)
 
-        #ノーパンノーブラ判定 bool
-        nop = cf.nopan()
-        nob = cf.nobura()
-        #eはexposed は露出の e
-        nippse = cf.nipps_exposed()
-        pussye = cf.pussy_exposed()
-        burae = cf.bra_exposed()
-        pantse = cf.psnts_exposed()
+        #フラグ判定 bool
+        self.flags["ノーパン"] = cf.nopan()
+        self.flags["ノーブラ"] = cf.nobura()
+        self.flags["乳露出"] = cf.nipps_exposed()
+        self.flags["膣露出"] = cf.pussy_exposed()
+        self.flags["ブラ露出"] = cf.bra_exposed()
+        self.flags["パン露出"] = cf.psnts_exposed()
+
 
         # 上着描写
-        # 上半身上着
-        if (self.sjh.get_save("下半身下着表示フラグ") == 0 and nippse == 0)\
-            or self.sjh.get_save("上半身はだけ状態") == 1:
-            clothings = ["上半身上着1","上半身上着2","ボディースーツ","ワンピース","着物","レオタード"]
-            for key, value in cloth_dict.items():
-                if key in clothings:
-                    prompt = csvm.get_df(clo,"衣類名", value, "プロンプト")
+        # ブラと乳首が見えないか､上着をはだけていない
+        if not self.flags["ブラ露出"] and not self.flags["乳露出"] or self.flags["上半身はだけ状態"]:
+            clothings = ["上半身上着1", "上半身上着2", "ボディースーツ", "ワンピース", "着物", "レオタード"]
+            for 表示部位, 名前 in cloth_dict.items():
+                if 表示部位 in clothings:
+                    prompt = csvm.get_df(clo,"衣類名", 名前, "プロンプト")
                     if prompt != "ERROR":
                         prompt = f"(wearing {prompt}:1.3)"
-                        nega = csvm.get_df(clo,"衣類名", value, "ネガティブ")
+                        nega = csvm.get_df(clo,"衣類名", 名前, "ネガティブ")
                         self.add_element("cloth", prompt, nega)
 
         # 下半身上着
-        if (pantse == 0 and pussye == 0)\
-            or self.sjh.get_save("下半身ずらし状態") == 1:
-            clothings = ["下半身上着1","下半身上着2","スカート", "ズボン",]
-            for key, value in cloth_dict.items():
-                if key in clothings:
-                    prompt = csvm.get_df(clo,"衣類名", value, "プロンプト")
+        if not self.flags["パン露出"] and not self.flags["膣露出"]\
+            or self.flags["下半身ずらし状態"]:
+            clothings = ["下半身上着1", "下半身上着2", "スカート", "ズボン",]
+            for 表示部位, 名前 in cloth_dict.items():
+                if 表示部位 in clothings:
+                    prompt = csvm.get_df(clo,"衣類名", 名前, "プロンプト")
                     if prompt != "ERROR":
                         prompt = f"(wearing {prompt}:1.3)"
-                        nega = csvm.get_df(clo,"衣類名", value, "ネガティブ")
+                        nega = csvm.get_df(clo,"衣類名", 名前, "ネガティブ")
                         self.add_element("cloth", prompt, nega)
 
-        for key, value in cloth_dict.items():
+
+        for 表示部位, value in cloth_dict.items():
             clothings = ["帽子", "アクセサリ", "腕部装束", "外衣", "上半身下着2",\
                          "下半身下着1", "その他1", "その他2", "その他3", "靴下", "靴"]
-            if key in clothings:
+            if 表示部位 in clothings:
                 prompt = csvm.get_df(clo,"衣類名", value, "プロンプト")
                 nega = csvm.get_df(clo,"衣類名", value, "ネガティブ")
-                self.add_element("cloth", prompt, nega)
+                self.add_element("cloth", f", {prompt}", nega)
 
-        if nob: #ノーブラ
+        if self.flags["ノーブラ"]: #ノーブラ
             prompt = csvm.get_df(clo,"衣類名","ノーブラ","プロンプト")
             nega = csvm.get_df(clo,"衣類名","ノーブラ","ネガティブ")
-            self.add_element("cloth", prompt, nega)
+            self.add_element("cloth", f", {prompt}", nega)
 
-        elif burae == 1: #ブラ見える
+        elif self.flags["ブラ露出"]: #ブラ見える
             if self.sjh.get_save("上半身下着2") != 0:
-                prompt = csvm.get_df(clo,"衣類名",self.sjh.get_save("upper_underwear"),"プロンプト")
+                prompt = csvm.get_df(clo,"衣類名",f", {self.upper_underwear}","プロンプト")
                 if prompt != "ERROR":
                     prompt = f"(wearing {prompt}:1.3)"
                     nega = csvm.get_df(clo,"衣類名", value, "ネガティブ")
-                    self.add_element("cloth", prompt, nega)
+                    self.add_element("cloth", f", {prompt}", nega)
 
-        if nop: #ノーパン
+        if self.flags["ノーパン"]: #ノーパン
             prompt = csvm.get_df(clo,"衣類名","ノーパン","プロンプト")
-            nega = csvm.get_df(clo,"衣類名","ノーブラ","ネガティブ")
-            self.add_element("cloth", prompt, nega)
-        elif burae == 1: #パンツ見える
-            if self.sjh.get_save("上半身下着2") != 0:
-                prompt = csvm.get_df(clo,"衣類名",self.sjh.get_save("upper_underwear"),"プロンプト")
+            nega = csvm.get_df(clo,"衣類名","ノーパン","ネガティブ")
+            self.add_element("cloth", f", {prompt}", nega)
+        elif self.flags["パン露出"]: #パンツ見える
+            if self.上半身下着2 != 0:
+                prompt = csvm.get_df(clo,"衣類名",f", {self.lower_underwear}","プロンプト")
                 if prompt != "ERROR":
                     prompt = f"(wearing {prompt}:1.3)"
                     nega = csvm.get_df(clo,"衣類名", value, "ネガティブ")
-                    self.add_element("cloth", prompt, nega)
+                    self.add_element("cloth", f", {prompt}", nega)
 
         # panty aside
         # 挿入とクンニ
-        if (self.sjh.get_save("マスターがＶ挿入") != 0 )\
-            or(self.sjh.get_save("マスターがＡ挿入") != 0)\
-            or (self.sjh.get_save("コマンド") == "1"):
-            if self.sjh.get_save("下半身下着2") != 0:
+        if self.flags["マスターがV挿入"] or self.flags["マスターがA挿入"] or self.comno == 1:
+            if self.下半身下着2 != 0:
                 self.add_element("cloth", "(pantie aside)", None)
 
     def create_clothing_element_simplified(self):
@@ -805,7 +798,7 @@ class PromptMakerTW(PromptMaker):
         efe = "Effect.csv"
         prompt = ""
         negative = ""
-        
+
         # 帽子　とりあえず無条件で描画
         # csvに記入がないときは "" が返ってくるように第5引数を指定
         prompt += csvm.get_df(cha,"キャラ名",self.name,"デフォルト帽子",error_return="") + ","
@@ -819,7 +812,7 @@ class PromptMakerTW(PromptMaker):
         else:
             print(self.undress)
             #上着なしなら下着描画の可能性がある
-            if self.braname != "":                    
+            if self.braname != "":
                 negative += "nipples,"
                 if not self.uniquepanty:
                     #ふつうの下着（固有下着以外）
@@ -837,7 +830,7 @@ class PromptMakerTW(PromptMaker):
                     #固有パンツの場合
                     prompt += csvm.get_df("Uniquecloth.csv","キャラ名", self.name,"下半身下着プロンプト") + ","
                     negative += csvm.get_df("Uniquecloth.csv","キャラ名", self.name,"下半身下着ネガティブ") + ","
-    
+
             #下着姿の共通プロンプト
             prompt += csvm.get_df(efe,"名称", "上着脱衣済み","プロンプト") + ","
             negative += csvm.get_df(efe,"名称", "上着脱衣済み","ネガティブ",error_return="") + ","
@@ -961,7 +954,6 @@ class PromptMakerTW(PromptMaker):
 
 
                 self.add_element("item", prompt, nega)
-
 
 
     def prompt_debug(self):
