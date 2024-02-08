@@ -3,13 +3,11 @@ import random
 import re
 import time
 from tkinter import filedialog
-
+from module.settings import Settings
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
-from module.csv_manager import CSVMFactory
-csvm = CSVMFactory.get_instance()
 
 # ブラウザ操作用 webdriver、ポジ、ネガを引数に取ってgenerate
 
@@ -184,6 +182,9 @@ def get_width_and_height(kaizoudo):
         ValueError: 解像度文字列が不正であるか、数値に変換できない値が含まれている場合。
     """
     # 解像度欄でも置換機能を使えるようにする。%で囲まれた文字列があると置換を試みる。
+    #インスタンスはこのメソッドを使うときだけ呼び出す｡毎度だと処理が遅くなる
+    from module.csv_manager import CSVMFactory
+    csvm = CSVMFactory.get_instance()
     kaizoudo = csvm.chikan(kaizoudo)
 
     # 読み出した結果が空欄やエラーの場合は0,0を返す。解像度の変更はスキップされる。
@@ -198,6 +199,11 @@ def get_width_and_height(kaizoudo):
         splitkai = re.split(",", kaizoudo)
         ra = random.randrange(len(splitkai))
         kaizoudo = splitkai[ra]
+
+    # アスペクト比の形式の場合、解像度を計算する｡APIモード限定
+    Settings.get_config_ini_api()#暫定でここで処理実際は実行ファイルに書くべきポイント
+    if ":" in kaizoudo and Settings.apimode:
+        kaizoudo = process_aspect_ratio(kaizoudo)
 
     # xで分割 (区切り文字としてXと*と×も認める)
     kai = re.split("[xX*×]", kaizoudo)
@@ -218,34 +224,42 @@ def get_width_and_height(kaizoudo):
     return width, height
 
 
-# def calculate_resolution_from_aspect_ratio(aspect_ratio, base_dimension):
-#     """
-#     解像度の頭脳プレーだぜ！アスペクト比と基準寸法から、いかにも賢そうな解像度を計算してやる。
+def process_aspect_ratio(kaizoudo):
+    """SDでよく使うのは 512:768 は 2:3
+    短辺を基準に計算することで規定お解像度以下の画像は静止されない
+    Args:
+        アスペクト比 (str): 16:9 とか
 
-#     アスペクト比が「16:9」みたいな感じで来るから、ここはちょっとした算数の時間だ。基準寸法を幅にするか高さにするか、それ次第で結果が変わるぜ。ま、心配すんな、計算は任せておけ！
+    Returns:
+        str: '幅x高'
+    """
+    import json
+    import os
+    # 現在のファイルのディレクトリを取得
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    # 親ディレクトリに移動
+    parent_dir = os.path.dirname(current_dir)
+    # JSON ファイルのパスを構築
+    config_api = os.path.join(parent_dir, 'config.json')
 
-#     Args:
-#         aspect_ratio (str): アスペクト比。これが解像度のカギだ。
-#         base_dimension (int): 幅か高さのどっちか。これが基準になるサイズだ。
+    with open(config_api, 'r') as file:
+        config = json.load(file)
+        base_width = config.get('width', 512)  # デフォルト値は512
+        base_height = config.get('height', 512)  # デフォルト値は512
 
-#     Returns:
-#         tuple: 解像度がわかると、画面がパッと広がるな。幅と高さをタプルで返してやるよ。
+    # アスペクト比を分割
+    width_ratio, height_ratio = map(int, kaizoudo.split(':'))
 
-#     Raises:
-#         ValueError: アスペクト比が変な形してたら、こっちも困る。計算できないときはエラーを吐くぜ。
-#     """
-#     try:
-#         width_ratio, height_ratio = map(int, aspect_ratio.split(":"))
-#     except ValueError:
-#         print("アスペクト比の解析に失敗しました。")
-#         return 0, 0
+    if width_ratio < height_ratio:  # 縦長の場合、幅を基準にする
+        # 基準となる幅を元に高さを計算
+        calculated_height = int(base_width / width_ratio * height_ratio)
+        # 解像度を64の倍数に調整
+        adjusted_width = (base_width // 64) * 64
+        adjusted_height = (calculated_height // 64) * 64
+    else:  # 縦長の場合、高さを基準にする
+        calculated_width = int(base_height / height_ratio * width_ratio)
+        adjusted_width = (calculated_width // 64) * 64
+        adjusted_height = (base_height // 64) * 64
 
-#     # 基準寸法を用いて実際の解像度を計算
-#     if width_ratio > height_ratio:
-#         width = base_dimension
-#         height = int(base_dimension * height_ratio / width_ratio)
-#     else:
-#         height = base_dimension
-#         width = int(base_dimension * width_ratio / height_ratio)
-
-#     return width, height
+    # 計算された解像度を返す
+    return f"{adjusted_width}x{adjusted_height}"
