@@ -1,12 +1,11 @@
 import inspect
 from module.emo import Expression
 from module.csv_manager import CSVMFactory
-from module.sub import get_width_and_height
 
 csvm = CSVMFactory.get_instance()
 class PromptMaker():
     """
-    このPromptMakerクラスは、eraTWゲームの状況に合わせたプロンプトを作るための強力なツールだぜ。
+    このPromptMakerクラスは、eraゲームの状況に合わせたプロンプトを作るための強力なツールだぜ。
     シナリオやキャラクターの状態に応じた、細かくカスタマイズされたテキストを生成するんだ。使い方を間違えないようにな！
 
     Attributes:
@@ -26,7 +25,7 @@ class PromptMaker():
 
     def __init__(self, sjh):
         self.sjh = sjh
-        self.initialize_class_variables()#判定に必要なセーブデータを一括取得 #0 or 1はBoolにするかも
+        self.initialize_class_variables()#判定に必要なセーブデータを一括取得
         self.prompt =    {"situation":"", "location":"", "weather":"", "timezone":"", "scene":"",\
                           "chara":"","cloth":"","train": "","emotion": "","stain": "",\
                           "潤滑": "","effect": "", "body": "","hair": ""}
@@ -57,12 +56,12 @@ class PromptMaker():
 
 
     def initialize_class_variables(self):
-        # 判定につかうセーブデータをクラス変数内にしまう専用のメソッド
-        # 判定に必要なSaveデータをinitで全部先に取得すると読みにくので分離だ
-        #値が存在しない場合 NanやNoneにならないようにする あとで
+        """判定につかうセーブデータをクラス変数内にしまう専用のメソッド
+        判定に必要なSaveデータをinitで全部先に取得すると読みにくので分離
+        """
         self.scene  = self.sjh.get_save("scene")#str
         self.charno = self.sjh.get_save("キャラ固有番号")#int
-        self.name   = self.sjh.get_save("target") #list ターゲット名
+        self.name   = self.sjh.get_save("target") #str ターゲット名
         self.comno  = self.sjh.get_save("コマンド")#int
         self.com    = self.sjh.get_save("コマンド名")#str
         self.talent = self.sjh.get_save("talent") #list
@@ -80,21 +79,21 @@ class PromptMaker():
         self.mcum   = self.sjh.get_save("MASTER射精量") #int
         self.juice  = self.sjh.get_save("palam")["潤滑"] #int
         self.lostv  = self.sjh.get_save("処女喪失") #int (boole
-        self.b      = self.sjh.get_save("今回の調教で処女喪失") #int (boole bは何のbだ? AI魔理沙にいい変数名無い?って聞けない
+        self.b      = self.sjh.get_save("今回の調教で処女喪失") #int (boole
         self.nyo    = self.sjh.get_save("放尿") #int (boole
         self.nyu    = self.sjh.get_save("噴乳") #int (boole
         self.birth  = self.sjh.get_save("出産日")#int
         self.upwear = self.sjh.get_save("上半身着衣状況")#int
-        #衣装関係はあとで
 
 
     def generate_prompt(self):
         """
-        このgenerate_promptは、elementsをギュッと集めて呪文を生成するんだ。
-        シチュエーション、ロケーション、天気、装備、キャラクターなど、色々な要素から呪文を組み立てていく。
+        このgenerate_promptは基本的な呪文生成の設計図だぜ。でも、実際の魔法は、このクラスを継承したサブクラスが担当するんだ。
+        つまり、このメソッド自体は直接使われることはないんだぜ。
+        サブクラスでこのメソッドをオーバーライドして、各シナリオに合わせた特別な呪文を作り上げるんだ。
 
-        屋内か屋外かで天気の扱いが変わるし、TRAINシーンかどうかで処理も変わるんだ
-        全部を合わせて、強力な呪文を作り上げるぜ。
+        それぞれのサブクラスが、この魔法の設計図をもとに、その独自の材料を加えて、もっと強力でカスタマイズされた呪文を作るわけだ。
+        だから、このメソッドを見ても、その真の力はサブクラスの中に隠されていると思ってくれ。
 
         Returns:
             tuple: (prompt, negative, width, height)を返す。
@@ -102,7 +101,7 @@ class PromptMaker():
                 - negative (str): 呪文のネガティブな面を表すテキスト。
                 - width (int), height (int): 生成する画像のサイズ。
 
-        このメソッドを使って、どんなシナリオにもバッチリ対応できる呪文を作れるぜ！
+        サブクラスでこの魔法を使って、どんなシナリオにもバッチリ対応できるぜ！
         """
         #呪文に含めるかの条件分岐はあとで考える
         self.create_situation_element() #シチュエーション｢マスター移動｣｢ターゲット切替｣
@@ -118,7 +117,6 @@ class PromptMaker():
             self.create_train_element()#行動
             self.create_equip_element()#一時装備
             #TRAINに限定しないと料理中に射精とかが起こる
-            #eraTWでは性行為以外でもコマンドがある=TRAINとして吐き出させてるのでであとで直す必要あるかも
             self.create_cum_element()
             if self.flags["drawvagina"]:
                 self.create_juice_element()#汁
@@ -178,8 +176,10 @@ class PromptMaker():
 
         if prompt is not None and prompt != "ERROR":
             self.prompt[elements] += prompt
+            #print (f'PromptMaker {elements} デバッグ prompt  ･･･  {prompt}')
         if nega is not None and nega != "ERROR":
             self.negative[elements] += nega
+            #print (f'PromptMaker {elements} デバッグ nega  ･･･  {nega}')
 
 
     def update(self):
@@ -196,8 +196,6 @@ class PromptMaker():
         # 条件によりコマンド差し替え（乳サイズでパイズリ→ナイズリ
         # キャラ差し替え　EXフラグが立っていたらEXキャラ用の名前に変更する
         # など
-        #SJH使う場合要らないかも あとで考える
-
 
         # 巨乳未満のキャラのパイズリはナイズリに変更
         # (ちんちんが隠れてしまうような描写は普乳を逸脱しているため)
@@ -228,10 +226,10 @@ class PromptMaker():
         if self.scene == "ターゲット切替" or self.scene == "マスター移動" or self.scene == "真名看破":
             if self.charno == 0:
                     # targetがいないとき #この条件はTWではうまく動かない
-                    self.add_element("situation", "(empty scene)", "(1girl:1.7)")
+                    self.add_element("scene", "(empty scene)", "(1girl:1.7)")
 
             else:
-                self.add_element("situation", "1girl standing, detailed scenery in the background", None)
+                self.add_element("scene", "1girl standing, detailed scenery in the background", None)
                 #ターゲットが居るならキャラ｡顔表示ONにしないと誰かが居ても空っぽの場所になるよ
                 self.flags["drawchara"] = True
                 self.flags["drawface"] = True
@@ -308,7 +306,6 @@ class PromptMaker():
         eve = "Event.csv"
 
         #0 以上だと成功
-        #あとで検証
         if self.succ < 0:
             deny = csvm.get_df(tra,"コマンド名",self.com,"拒否プロンプト")
             if deny != "ERROR":
@@ -355,8 +352,8 @@ class PromptMaker():
         """
         equ = "Equip.csv"
 
-        N膣装備 = ["11","12","13","22"]
-        Nアナル装備 = ["14","15","23"]
+        N膣装備 = [11,12,13,22]
+        Nアナル装備 = [14,15,23]
         #装備の値はあとで確認
         # 存在するすべてのequipについて繰り返す
         for key,value in self.tequip.items():
@@ -640,6 +637,7 @@ class PromptMaker():
         解像度は、画像生成における品質を決定する重要な要素だから、正確に取得することが大事だぜ！
         """
         # TRAINとその他のEVENTで読み取るcsvが異なる
+        from module.sub import get_width_and_height
         if self.scene == "TRAIN":
             tra = "Train.csv"
             kaizoudo = csvm.get_df(tra,"コマンド名",self.com,"解像度")
