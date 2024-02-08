@@ -55,7 +55,6 @@ class Expression():
 
         self.emo = "Emotion.csv"
         self.initialize_class_variables_emo()
-        self.emolevels()
 
 
     def add_element(self, elements, prompt, nega):
@@ -72,8 +71,11 @@ class Expression():
 
         if prompt is not None and prompt != "ERROR":
             self.emopro[elements] += prompt
+            #print (f'Expression {elements} デバッグ emopro  ･･･  {prompt}')
         if nega is not None and nega != "ERROR":
             self.emonega[elements] += nega
+            #print (f'Expression {elements} デバッグ emonega  ･･･  {nega}')
+
 
 
     def initialize_class_variables_emo(self):
@@ -82,7 +84,7 @@ class Expression():
         self.eyecolor = self.sjh.get_save("eyecolor")#int
         self.equip = self.sjh.get_save("equip")#dict
         self.player = self.sjh.get_save("PLAYER")#int
-        self.睡眠薬 = self.sjh.get_save("睡眠薬")
+        self.睡眠薬 = self.sjh.get_save("睡眠薬")#int
         self.失神 = self.sjh.get_save("失神")
         self.睡眠深度 = self.sjh.get_save("睡眠深度")
         self.絶頂の強度 = self.sjh.get_save("絶頂の強度")
@@ -98,8 +100,8 @@ class Expression():
         self.drunk = self.sjh.get_save("酔い") or 0
         self.C = self.sjh.get_save("C絶頂")
         self.B = self.sjh.get_save("B絶頂")
-        self.V = self.sjh.get_save("B絶頂")
-        self.A = self.sjh.get_save("B絶頂")
+        self.V = self.sjh.get_save("V絶頂")
+        self.A = self.sjh.get_save("A絶頂")
         self.mark = self.sjh.get_save("mark")
         self.好感度 = self.sjh.get_save("好感度")
 
@@ -207,6 +209,7 @@ class Expression():
         self.check_love_level()      #好意Lv
         self.check_drunk_level()     #酩酊Lv
         self.check_resist_level()    #反発刻印
+        self.check_sleep_level()     #睡眠深度
         if self.scene == "TRAIN":
             #調教中のみ意味を持つパラメーター
             #現時点のeraTW対応仕様
@@ -220,8 +223,8 @@ class Expression():
 
     def create_sleep_element(self):
         """
-        #148,睡眠薬強度
-        #(0=通常睡眠　1=深い睡眠　2=非常に深い睡眠　3=昏睡)
+        #148,睡眠薬強度  (0=通常睡眠　1=深い睡眠　2=非常に深い睡眠　3=昏睡)(eraTW
+        # 0=目覚め 1=まどろみ 2=睡眠 3=熟睡 4=昏睡(YM)
         """
         emo = self.emo
         if self.睡眠薬 is not None and self.失神 is not None:
@@ -271,8 +274,9 @@ class Expression():
         """
         emo = self.emo
         drunk_level = self.emolevel["酩酊Lv"]
-        prompt = csvm.get_df_2key(emo, "状態", "酩酊Lv", "level", drunk_level, "プロンプト")
-        self.add_element("酔", prompt, None)
+        if drunk_level >= 1:
+            prompt = csvm.get_df_2key(emo, "状態", "酩酊Lv", "level", drunk_level, "プロンプト")
+            self.add_element("酔", prompt, None)
 
 
     def create_pain_element(self):
@@ -316,15 +320,17 @@ class Expression():
         """
         emo = self.emo
         fear_level = self.emolevel.get("恐怖Lv")
-        prompt = csvm.get_df_2key(emo, "状態", "恐怖Lv", "level", fear_level, "プロンプト")
-        self.add_element("恐怖", prompt, None)
-        self.add_element("目つき", "(startled eyes,.-.),", "smile")
+        if fear_level > 0:
+            prompt = csvm.get_df_2key(emo, "状態", "恐怖Lv", "level", fear_level, "プロンプト")
+            self.add_element("恐怖", prompt, None)
+            self.add_element("目つき", "(startled eyes,.-.),", "smile")
 
 
     def create_ahe_element(self):
         """
         これはAI魔理沙に書いてもらおうとするとポリシー違反になる
         絶頂Lvは絶頂が重なった数
+        快楽強度は eraTW{TCVAR:106}
         """
         # 淫乱持ちは少しアヘりやすい
         # 恋慕と排他じゃないバリアントでは望まなくても淫乱がついてしまうので控えめの補正にする
@@ -333,7 +339,7 @@ class Expression():
             if self.emolevel["快楽強度"] > 0:
                 self.emolevel["快楽強度"] += 2
 
-        if self.emolevel["絶頂Lv"] >= 4:  #四重絶頂の意
+        if self.emolevel["絶頂Lv"] == 4:  #四重絶頂の意
             self.emolevel["快楽強度"] += 6
         ahe_strength = self.emolevel["快楽強度"]
         # 基本の絶頂エフェクト
@@ -357,7 +363,7 @@ class Expression():
                     self.add_element('絶頂',", <lora:ahegao_v1:1.5:1:lbw=F>,(ahegao),open mouth,drooling,saliva", None )
             #絶頂強度17超え 完全にアヘ顔
             else:
-                prompt = csvm.get_df_2key(emo, "状態", "快楽強度", "level", ahe_strength, "プロンプト")
+                prompt = csvm.get_df_2key(emo, "状態", "快楽Lv", "level", ahe_strength, "プロンプト")
                 self.add_element('絶頂',prompt, None)
 
 
@@ -369,8 +375,9 @@ class Expression():
         """
         emo = self.emo
         embarras = self.emolevel["恥情Lv"]
-        prompt = csvm.get_df_2key(emo, "状態", "快楽強度", "level", embarras, "プロンプト")
-        self.add_element('羞恥',prompt, None)
+        if embarras >= 1:
+            prompt = csvm.get_df_2key(emo, "状態", "恥情Lv", "level", embarras, "プロンプト")
+            self.add_element('羞恥',prompt, None)
 
 
     def create_resist_element(self):
@@ -417,23 +424,24 @@ class Expression():
         """
         emo = self.emo
         # 刻印レベルの苦痛フラグが立ってる場合、好意の表情をつけない。ただし高レベルマゾは例外
-        if not self.flags["苦痛"] or self.abl.get("マゾっ気") >= 4:
-            love_lv = self.emolevel["好意Lv"]
-            prompt = csvm.get_df_2key(emo, "状態", "好意Lv", "level", love_lv, "プロンプト")
-            self.add_element('ハート',prompt, None)
+        love_lv = self.emolevel["好意Lv"]
+        if love_lv > 0:
+            if not self.flags["苦痛"] or self.abl.get("マゾっ気") >= 4:
+                prompt = csvm.get_df_2key(emo, "状態", "好意Lv", "level", love_lv, "プロンプト")
+                self.add_element('ハート',prompt, None)
 
 
     def create_boredom_element(self):
         emo = self.emo
         boredom = self.emolevel["退屈Lv"]
-
+        if boredom > 0:
         # 従順低い時のサドは挑戦的な顔
-        if "サド" in self.talent:
-            self.add_element('退屈',", arrogance", None)
-        else:
-            # サド以外は退屈な顔
-            prompt = csvm.get_df_2key(emo, "状態", "退屈Lv", "level", boredom, "プロンプト")
-            self.add_element('退屈',prompt, None)
+            if "サド" in self.talent:
+                self.add_element('退屈',", arrogance", None)
+            else:
+                # サド以外は退屈な顔
+                prompt = csvm.get_df_2key(emo, "状態", "退屈Lv", "level", boredom, "プロンプト")
+                self.add_element('退屈',prompt, None)
 
 
     def create_love_emotion_element(self):
@@ -640,6 +648,22 @@ class Expression():
             self.emolevel["退屈Lv"] = 0
 
 
+    def check_sleep_level(self):
+        """
+        Lv 0~4 (YM)
+        """
+        if self.睡眠薬 == 0:
+            self.emolevel["睡眠深度"] = 0
+        if self.睡眠薬 == 1:
+            self.emolevel["睡眠深度"] = 1
+        if self.睡眠薬 == 2:
+            self.emolevel["睡眠深度"] = 2
+        if self.睡眠薬 == 3:
+            self.emolevel["睡眠深度"] = 3
+        if self.睡眠薬 == 4:
+            self.emolevel["睡眠深度"] = 4
+
+
     def prompt_debug_emo(self):
         for key, value in self.emopro.items():
             print (f'emopro:::{key}:::{value}')
@@ -649,3 +673,4 @@ class Expression():
             print (f'emoLevel:::{key}:::{value}')
         for key, value in self.flags.items():
             print (f'emonFlag::{key}:::{value}')
+    
