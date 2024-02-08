@@ -34,7 +34,7 @@ class PromptMakerTW(PromptMaker):
     このクラスを使って、どんなシナリオでも対応できるプロンプトを作り出せるぜ。使いこなせるかな？
     """
     def __init__(self, sjh):
-        self.sjh = sjh
+        super().__init__(sjh)
         self.prompt =    {"situation":"", "location":"", "weather":"", "timezone":"", "scene":"",\
                           "chara":"","cloth":"","train": "","emotion": "","stain": "","activity":"",\
                           "潤滑": "","effect": "", "body": "","hair": "","event":"","item":""}
@@ -61,6 +61,31 @@ class PromptMakerTW(PromptMaker):
         self.jobno = self.sjh.get_save("職種") #int　固有の仕事名が割り当てられていない”清掃"とか"会話"とかの識別番号
         self.undress = self.sjh.get_save("上着脱衣済み") #int (boole　「下着姿にする」実行で1になる
         self.fullnude = self.sjh.get_save("全裸") #int (boole　1なら全裸
+        self.上半身下着2 = self.sjh.get_save("上半身下着2")#int
+        self.下半身下着2 = self.sjh.get_save("下半身下着2")#int
+
+        #@MASTER_POSE(n(部位),1(ペニス))
+        #戻り値:int MASTERのペニスを占有中のキャラ番号を返す
+        #第三引数:bool が1の場合その前に誰が第二引数に触れてたかを返す 今は使っていない
+        self.マスターがV挿入_chara_no = self.sjh.get_save("マスターがV挿入")
+        #現在のターゲットにたいして挿入中であるかの確認
+        if self.マスターがV挿入_chara_no == self.charno:
+            self.flags["マスターがV挿入"] = True
+        else:
+            self.flags["マスターがV挿入"] = False
+
+        self.マスターがA挿入_chara_no = self.sjh.get_save("マスターがA挿入")
+        if self.マスターがA挿入_chara_no == self.charno:
+            self.flags["マスターがA挿入"] = True
+        else:
+            self.flags["マスターがA挿入"] = False
+
+        #下着の表示フラグはTWの場合状況依存でなく､主人公の能力依存のため透視になってしまう
+        #TODO:改良
+        self.flags["下半身下着表示フラグ"] = bool(self.sjh.get_save("下半身下着表示フラグ"))
+        self.flags["上半身下着表示フラグ"] = bool(self.sjh.get_save("上半身下着表示フラグ"))
+        self.flags["上半身はだけ状態"] = bool(self.sjh.get_save("上半身はだけ状態"))
+        self.flags["下半身ずらし状態"] = bool(self.sjh.get_save("下半身ずらし状態"))
 
 
     def generate_prompt(self):
@@ -737,7 +762,7 @@ class PromptMakerTW(PromptMaker):
             self.add_element("cloth", f", {prompt}", nega)
 
         elif self.flags["ブラ露出"]: #ブラ見える
-            if self.sjh.get_save("上半身下着2") != 0:
+            if self.上半身下着2 != 0:
                 prompt = csvm.get_df(clo,"衣類名",f", {self.upper_underwear}","プロンプト")
                 if prompt != "ERROR":
                     prompt = f"(wearing {prompt}:1.3)"
