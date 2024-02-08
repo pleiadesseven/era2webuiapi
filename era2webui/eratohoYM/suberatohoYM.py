@@ -6,13 +6,7 @@ csvm = CSVMFactory.get_instance()
 class PromptMakerYM(PromptMaker):
     def __init__(self,sjh):
         super().__init__(sjh)
-        #YM独自の createメソッド用のキーを追加 situation keyで済むかはあとでロジック確認
-        self.prompt["train_after"] = ""
-        self.negative["train_after"] = ""
-        self.prompt["train_beffore"] = ""
-        self.negative["train_beffore"] = ""
-        self.prompt["event"] = ""
-        self.negative["event"] = ""
+        #YM独自の createメソッド用のキーを追加
         self.prompt["equip"] = ""
         self.negative["equip"] = ""
         self.initialize_class_variablesYM()
@@ -544,7 +538,6 @@ class PromptMakerYM(PromptMaker):
     # 解像度をcsvから読む
     def get_kaizoudo(self):
         """
-        あとでアスペクト比を基に可変できるようにする
         このget_kaizoudoメソッドは、シーンに応じて解像度をCSVファイルから読み込むために使うんだ。
         TRAINシーンとその他のEVENTシーンで読み取るCSVが異なるから、条件分岐を使って適切なCSVを選択するぜ。
 
@@ -556,6 +549,9 @@ class PromptMakerYM(PromptMaker):
         if self.scene == "TRAIN":
             tra = "Train.csv"
             kaizoudo = csvm.get_df(tra,"コマンド番号",self.comNo,"解像度")
+            if kaizoudo != "ERROR":
+                self.width, self.height = get_width_and_height(kaizoudo)
+
         #これ用のプロンプトや解像度はあとでCSVにかく
         elif self.scene == "マスター移動" or self.scene == "ターゲット切替":
             return
@@ -563,4 +559,6 @@ class PromptMakerYM(PromptMaker):
         else:
             eve = "Event.csv"
             kaizoudo = csvm.get_df(eve,"名称",self.scene,"解像度")
-            self.width, self.height = get_width_and_height(kaizoudo)
+            if kaizoudo != "ERROR":
+                self.width, self.height = get_width_and_height(kaizoudo)
+    
