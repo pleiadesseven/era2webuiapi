@@ -77,6 +77,7 @@ class ClothFlags():
 
     def nobura(self):
             """ノーブラ判定
+            #TODO:???状態でもTrueになるので、その辺の挙動を調べる
             Returns: bool: True if the character is not wearing any underwear, False otherwise.
             """
             return (
