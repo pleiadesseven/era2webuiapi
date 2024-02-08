@@ -126,6 +126,7 @@ ELSEIF RESULT == 821 && EQUIP:0 && EQUIP:TARGET:下半身下着２
 		CALL SIMATTYAUOJISAN
 	ELSE
 		SIF CFLAG:TARGET:291 == 0
+			CALL OUTPUT_TXT("パンツをくすねる")
 			CALL 脱衣処理(TARGET, "くすねる")
 	ENDIF
 ;上半身下着を脱がす
@@ -326,8 +327,12 @@ ELSEIF RESULT >=1001 && RESULT < (CHARANUM + 1000) && CFLAG:(RESULT - 1000):同�
 	;立ち絵種類切り替え
 	SIF RESULT - 1000 == TARGET
 		FLAG:立ち絵種類 = !FLAG:立ち絵種類
-	TFLAG:104 = (RESULT - 1000)
-	CALL SET_TACHIE_FLAG("ターゲット切替")
+	TFLAG:104 = (RESULT - 1000)	
+	
+	;うふふ中は立ち絵表示しない	
+	IF CFLAG:317 == 0
+		CALL SET_TACHIE_FLAG("ターゲット切替")
+	ENDIF
 ;ストーキング対象切り替え
 ELSEIF RESULT >=4001 && RESULT < (CHARANUM + 4000) && CFLAG:(RESULT - 4000):同室
 	IF STALKED == TARGET

@@ -11,6 +11,8 @@ from eraTW.cloth import ClothFlags, get_cloth_dict
 from module.csv_manager import CSVMFactory
 from module.sub import get_width_and_height
 from module.promptmaker import PromptMaker
+from eraTW.emoTW import ExpressionTW
+import random
 csvm = CSVMFactory.get_instance()
 class PromptMakerTW(PromptMaker):
     """
@@ -38,19 +40,31 @@ class PromptMakerTW(PromptMaker):
         self.sjh = sjh
         self.initialize_class_variables()#判定に必要なセーブデータを一括取得 #0 or 1はBoolにするかも
         self.prompt =    {"situation":"", "location":"", "weather":"", "timezone":"", "scene":"",\
-                          "chara":"","cloth":"","train": "","emotion": "","stain": "",\
-                          "潤滑": "","effect": "", "body": "","hair": ""}
+                          "chara":"","cloth":"","train": "","emotion": "","stain": "","activity":"",\
+                          "潤滑": "","effect": "", "body": "","hair": "","event":"","item":""}
         self.negative =  {"situation":"", "location":"", "weather":"", "timezone":"", "scene":"",\
-                          "chara":"","cloth":"", "train": "","emotion": "","stain": "",\
-                          "潤滑": "","effect": "","eyes": "", "body": "","hair": ""}
-        self.flags = {"drawchara":True,"drawface":True,"drawbreasts":False,\
-            "drawvagina":False,"drawanus":False,"主人公以外が相手":False,"indoor":False}
+                          "chara":"","cloth":"", "train": "","emotion": "","stain": "","activity":"",\
+                          "潤滑": "","effect": "","eyes": "", "body": "","hair": "","event":"","item":""}
+        self.flags = {"drawchara":True,"drawface":True,"drawbreasts":False,"drawvagina":False,\
+                      "drawanus":False,"drawbottoms":False,"drawlocation":False,\
+                      "主人公以外が相手":False,"indoor":False}
         self.width = 0
         self.height = 0
-        self.csv_files  = {"location":'Location.csv',"weather":'Weather.csv',"cloth":'Cloth.csv',\
-                           "train":'Train.csv',"talent":'Talent.csv',"event":'Event.csv',\
-                           "equip":'Equip.csv',"chara":'Character.csv',"effect":'Effect.csv',\
-                           "emotion":'Emotion.csv'}
+        self.initialize_class_variablesTW()#判定に必要なセーブデータを一括取得
+
+    def initialize_class_variablesTW(self):
+        self.loca   = self.sjh.get_save("現在位置Str")#str
+        self.pantyname = self.sjh.get_save("パンツ名称") #str
+        self.braname = self.sjh.get_save("ブラ名称") #str
+        self.uniquepanty = self.sjh.get_save("固有下着着用中") #int (boole　1なら固有下着を着用
+        self.dish = self.sjh.get_save("料理名") #str
+        self.activityduration = self.sjh.get_save("自由行動") #int　1以上で自由行動中。残時間を兼ねている
+        self.activitytype = self.sjh.get_save("自由行動内容") #int　
+        self.working = self.sjh.get_save("仕事中") #int (boole　1で仕事中
+        self.jobname = self.sjh.get_save("仕事名") #str　"寺子屋の授業"など具体的な文字列が入る
+        self.jobno = self.sjh.get_save("職種") #int　固有の仕事名が割り当てられていない”清掃"とか"会話"とかの識別番号
+        self.undress = self.sjh.get_save("上着脱衣済み") #int (boole　「下着姿にする」実行で1になる
+        self.fullnude = self.sjh.get_save("全裸") #int (boole　1なら全裸
 
 
     def generate_prompt(self):
@@ -70,14 +84,23 @@ class PromptMakerTW(PromptMaker):
         このメソッドを使って、どんなシナリオにもバッチリ対応できる呪文を作れるぜ！
         """
         #呪文に含めるかの条件分岐はあとで考える
+        self.update()
         self.create_situation_element() #シチュエーション｢マスター移動｣｢ターゲット切替｣
         self.create_location_element() #場所
         self.create_season_element()#季節 屋内外問わず
         self.get_kaizoudo() #解像度
         #屋内なら天気は無し
-        if self.flags.get("indoor"):
+        if not self.flags.get("indoor"):
             self.create_weather_element() #天候
         self.create_timezone_element() #時間帯
+
+        # 一般EVENT
+        if not self.scene in ["TRAIN","ターゲット切替","マスター移動"]:#例外シーンを作るたびにここに列挙しないといけない
+            self.create_event_element() #オーバーライド
+            self.create_equip_element()#一時装備
+            if self.flags["drawvagina"]:
+                self.create_juice_element()#汁
+                self.create_stain_element()#如何わしい汚れ
 
         if self.scene == "TRAIN":
             self.create_train_element()#行動
@@ -90,6 +113,27 @@ class PromptMakerTW(PromptMaker):
                 self.create_traineffect_element() #噴乳はここでない気がする
                 self.create_stain_element()#如何わしい汚れ
 
+            if self.com == "スカートをめくる":
+                self.create_panty_element()
+
+            if self.com == "料理を作る":
+                self.create_item_element("料理を作る")
+            if self.com in ["食事を取る","食事をふるまう"]:
+                self.create_item_element("食事を取る")
+            if self.com == "採集する":
+                self.create_item_element("採集する")
+            if self.com == "採集する_一緒に":
+                self.create_item_element("採集する")
+
+            # 自由行動や仕事の描写　ここだとTrainのプロンプトと2重に描写することになる。問題があったら考える。
+            if self.com in ["仕事を手伝う","会話","お茶を淹れる","時間停止"]:
+                self.create_activity_element()
+
+            
+        if self.scene == "パンツをくすねる":
+            self.create_panty_element()
+
+
         #主人公しか居ない時はフラグをOFF 連れ出すときもOFFになる
         if self.charno == 0:
             self.flags["drawchara"] = False
@@ -100,13 +144,23 @@ class PromptMakerTW(PromptMaker):
             self.create_body_element()  #体
             self.create_effect_element()#妊娠
             #self.create_clothing_element() #未完成につきコメントアウト
+            self.create_clothing_element_simplified() #暫定的に、デフォルト衣装にしか対応できない版。
 
         if self.flags["drawface"]:  # 顔を描画しない場合は処理をスキップ
             self.create_hair_element()#髪
-            from eraTW.emoTW import Expression
-            emo = Expression(self.sjh)
+            pm_var = self.gather_instance_data()
+            emo = ExpressionTW(pm_var)
             emopro,emonega = emo.generate_emotion() #表情
             self.add_element("emotion", emopro, emonega)
+
+        if self.flags["drawlocation"] == False: # 背景オフ指定の場合は場所・天気・時間の影響を削除
+            self.prompt["location"] = ""
+            self.negative["location"] = ""
+            self.prompt["weather"] = ""
+            self.negative["weather"] = ""
+            self.prompt["timezone"] = ""
+            self.negative["timezone"] = ""
+
 
         #辞書のvalueが空の要素を消す
         prompt_values = [value for value in self.prompt.values() if value.strip()]
@@ -120,20 +174,6 @@ class PromptMakerTW(PromptMaker):
         negative = csvm.chikan(negative)
         self.prompt_debug()
         return prompt,negative,width,height
-
-
-    def get_csvname(self, key):
-        """
-        指定されたキーに対応するCSVファイル名を引っ張ってくるメソッドだ。
-        必要なファイル名をサクッと探し出すんだぜ。
-        Args:
-            key (str): CSVファイル名を取得したいキー。ちゃんと正しいキーを渡すんだぜ！
-
-        Returns:
-            str: 指定されたキーに対応するCSVファイル名。もしキーがなければ、Noneを返すぜ。
-                正しいファイル名を取得できるかどうかは、お前の渡したキー次第だな！
-        """
-        return self.csv_files.get(key)
 
 
     def add_element(self, elements, prompt, nega):
@@ -185,10 +225,22 @@ class PromptMakerTW(PromptMaker):
                 self.com = "ナイズリ"
 
         # 着衣時の胸愛撫はCHAKUMOMIのLoraを適用
-        # キャラLoraと相性よくないみたいでつらい
         if self.upwear != 0:
             if self.com == "胸愛撫":
-                self.com = "着衣胸愛撫"
+                self.com = "着衣胸愛撫"            
+            if self.com == "胸揉み":
+                self.com = "着衣胸揉み"
+
+        # 一人用コマンド　Targetがいるときは別のプロンプトを参照
+        if self.charno != 0:
+            if self.com in ["食事を取る","料理を作る","釣りをする","採集する"]:
+                self.com = self.com + "_一緒に"
+
+        #「自由行動に付き合う」の内容による分岐
+        if self.com == "自由行動に付き合う":
+            self.com = "自由行動に付き合う_"+ str(self.activitytype)
+
+
 
 
     def create_situation_element(self):
@@ -200,19 +252,24 @@ class PromptMakerTW(PromptMaker):
         シナリオがターゲット切替やマスター移動の場合は特定の条件に基づいて異なるプロンプトを追加する。
         # drawchara､drawface フラグの変更
         """
-        efc = self.get_csvname("effect")
+        efc = "Effect.csv"
+        prompt = csvm.get_df(efc,"名称","基礎プロンプト","プロンプト")
         nega = csvm.get_df(efc,"名称","基礎プロンプト","ネガティブ")
         self.add_element("situation", None, nega)
         if self.scene == "ターゲット切替" or self.scene == "マスター移動" or self.scene == "真名看破":
+            self.flags["drawlocation"] = True
             if self.charno == 0:
-                    # targetがいないとき #この条件はTWではうまく動かない
-                    self.add_element("situation", "(empty scene)", "(1girl:1.7)")
-
-        else:
-            self.add_element("situation", "1girl standing, detailed scenery in the background", None)
-            #ターゲットが居るならキャラ｡顔表示ONにしないと誰かが居ても空っぽの場所になるよ
-            self.flags["drawchara"] = True
-            self.flags["drawface"] = True
+                # targetがいないとき #この条件はTWではうまく動かない
+                self.add_element("situation", "(empty scene)", "(1girl:1.7)")
+            else:
+                # targetがいるとき 自由行動や仕事中の描写
+                self.create_activity_element()
+                #何もしてなければ通常の立ち絵
+                if self.prompt["activity"] == "":
+                    self.add_element("situation", "1girl standing, detailed scenery in the background", None)
+                    #ターゲットが居るならキャラ｡顔表示ONにしないと誰かが居ても空っぽの場所になるよ
+                    self.flags["drawchara"] = True
+                    self.flags["drawface"] = True
 
 
     def create_location_element(self):
@@ -224,12 +281,12 @@ class PromptMakerTW(PromptMaker):
         """
         # 700箇所
         #IDとの整合はあとで確かめる
-        loc = self.get_csvname("location")
-        prompt = csvm.get_df(loc,"地名", self.loca,"プロンプト")
-        nega = csvm.get_df(loc,"地名", self.loca,"ネガティブ")
+        loc = "Location.csv"
+        prompt = csvm.get_df(loc,"Str", self.loca,"プロンプト")
+        nega = csvm.get_df(loc,"Str", self.loca,"ネガティブ")
         self.add_element("location", prompt, nega)
         #室内外かはCSVに書いて
-        doors = csvm.get_df(loc,"地名", self.loca,"室内外")
+        doors = csvm.get_df(loc,"Str", self.loca,"室内外")
         if doors == "indoor":
             self.flags["indoor"] = True
 
@@ -239,7 +296,7 @@ class PromptMakerTW(PromptMaker):
         現在の季のプロンプトを生成するメソッドだぜ。
         CSVファイルから天気のCSVについでに書いてあるデータを読み込んで、適切なプロンプトとネガティブプロンプトを組み立てる。
         """
-        wea = self.get_csvname("weather")
+        wea = "Weather.csv"
         prompt = csvm.get_df(wea,"天気", self.season,"プロンプト")
         nega = csvm.get_df(wea,"天気", self.season,"ネガティブ")
         self.add_element("weather", prompt, nega)
@@ -250,11 +307,19 @@ class PromptMakerTW(PromptMaker):
         現在の天気に応じて、天気のプロンプトを生成するメソッドだぜ。
         CSVファイルから天気データを読み込んで、適切なプロンプトとネガティブプロンプトを組み立てる。
         """
-        wea = self.get_csvname("weather")
+        wea = "Weather.csv"
         prompt = csvm.get_df(wea,"天気", self.weath,"プロンプト")
         nega = csvm.get_df(wea,"天気", self.weath,"ネガティブ")
+        if self.time in range(0, 360) or self.time >= 1150:#夜間にsunshineとか出ないようにする
+            if (self.weath == "晴れ") or (self.weath == "快晴"):
+                prompt,nega = "",""
         self.add_element("weather", prompt, nega)
 
+        #雨が降ってて塗れっぱなしは妙だったので
+        if self.weath in ["雨","大雨","豪雨"]:
+            if (self.charno != 0) and (self.flags["drawchara"] == True):
+                prompt = ",holding an umbrella"
+                self.add_element("weather", prompt, None)
 
     def create_timezone_element(self):
         """
@@ -282,8 +347,8 @@ class PromptMakerTW(PromptMaker):
         成功した場合は、CSVから読み込んだ情報に基づいてプロンプトを作成する。失敗した場合は、拒否プロンプトを使うんだ。
         # drawchara drawface drawbreasts drawvagina drawanus
         """
-        tra = self.get_csvname("train")
-        eve = self.get_csvname("event")
+        tra = "Train.csv"
+        eve = "Event.csv"
 
         #0 以上だと成功
         #あとで検証
@@ -295,6 +360,7 @@ class PromptMakerTW(PromptMaker):
                 self.add_element("train", deny, nega)
                 self.flags["drawchara"] = True
                 self.flags["drawface"] = True
+                self.flags["drawlocation"] = bool(csvm.get_df(tra,"コマンド名",self.com,"背景描画"))
                 return
         else:
             # Train.csvに定義された体位から読み取ったキャラ描画、顔描画、胸描画のフラグ（0か1が入る)
@@ -304,6 +370,8 @@ class PromptMakerTW(PromptMaker):
             self.flags["drawbreasts"] =  bool(csvm.get_df(tra,"コマンド名",self.com,"胸描画"))
             self.flags["drawvagina"] = bool(csvm.get_df(tra,"コマンド名",self.com,"ヴァギナ描画"))
             self.flags["drawanus"] = bool(csvm.get_df(tra,"コマンド名",self.com,"アナル描画"))
+            self.flags["drawbottoms"] = bool(csvm.get_df(tra,"コマンド名",self.com,"下衣描画"))
+            self.flags["drawlocation"] = bool(csvm.get_df(tra,"コマンド名",self.com,"背景描画"))
 
             # コマンドが未記入の場合はget_dfが"ERROR"を返すのでEvent.csvの汎用調教を呼ぶ
             prompt = csvm.get_df(tra,"コマンド名",self.com,"プロンプト")
@@ -316,6 +384,8 @@ class PromptMakerTW(PromptMaker):
                 self.flags["drawbreasts"] = bool(csvm.get_df(eve,"名称","汎用調教","胸描画"))
                 self.flags["drawvagina"] = bool(csvm.get_df(eve,"名称","汎用調教","ヴァギナ描画"))
                 self.flags["drawanus"] = bool(csvm.get_df(eve,"名称","汎用調教","アナル描画"))
+                self.flags["drawbottoms"] = bool(csvm.get_df(eve,"コマンド名","汎用調教","下衣描画"))
+                self.flags["drawlocation"] = bool(csvm.get_df(eve,"名称","汎用調教","背景描画"))
 
                 self.add_element("train", prompt, nega)
             nega = csvm.get_df(tra,"コマンド名",self.com,"ネガティブ")
@@ -331,7 +401,7 @@ class PromptMakerTW(PromptMaker):
         だから、描画フラグに基づいて装備品をスキップする処理も行うんだ。
         こうすることで、シナリオのリアリティを高めることができるぜ！
         """
-        equ = self.get_csvname("equip.csv")
+        equ = "Equip.csv"
 
         N膣装備 = ["11","12","13","22"]
         Nアナル装備 = ["14","15","23"]
@@ -379,6 +449,21 @@ class PromptMakerTW(PromptMaker):
         # cum on ～ はちんちんを誘発、semen on ～ はほとんど効果がない
         # milkはときどきグラスが出る
 
+    def create_event_element(self):
+        #特殊イベントでないときは"scene"の値でcsvを検索する
+        eve = "Event.csv"
+        self.flags["drawchara"] = bool(csvm.get_df(eve,"名称",self.scene,"キャラ描画"))
+        self.flags["drawface"] = bool(csvm.get_df(eve,"名称",self.scene,"顔描画"))
+        self.flags["drawbreasts"] = bool(csvm.get_df(eve,"名称",self.scene,"胸描画"))
+        self.flags["drawvagina"] = bool(csvm.get_df(eve,"名称",self.scene,"ヴァギナ描画"))
+        self.flags["drawanus"] = bool(csvm.get_df(eve,"名称",self.scene,"アナル描画"))
+        self.flags["drawbottoms"] = bool(csvm.get_df(eve,"名称",self.scene,"下衣描画"))
+        self.flags["drawlocation"] = bool(csvm.get_df(eve,"名称",self.scene,"背景描画"))
+
+        prompt = csvm.get_df(eve,"名称",self.scene,"プロンプト")
+        negative = csvm.get_df(eve,"名称",self.scene,"ネガティブ")
+
+        self.add_element("event", prompt, negative)
 
     def create_chara_element(self):
         """
@@ -389,8 +474,8 @@ class PromptMakerTW(PromptMaker):
         さらに、特別な名前でプロンプトを登録してある場合は、キャラクター描写を強制的に上書きする処理も行うんだ。
 
         """
-        cha = self.get_csvname("chara")
-        efc = self.get_csvname("effect")
+        cha = "Character.csv"
+        efc = "Effect.csv"
 
         # キャラ描写で毎回記述するプロンプト Effect.csvから読み出す
         charabase = csvm.get_df(efc,"名称","人物プロンプト","プロンプト")
@@ -413,9 +498,6 @@ class PromptMakerTW(PromptMaker):
                 prompt = f"({prompt}:{prompt_wait})"
             self.add_element("chara", prompt, None)
 
-            prompt2 = csvm.get_df(cha,"キャラ名",self.name,"プロンプト2")
-            self.add_element("chara", prompt2, None)
-
             chara_lora = csvm.get_df(cha,"キャラ名",self.name,"キャラLora")
             nega = csvm.get_df(cha,"キャラ名",self.name,"ネガティブ")
             self.add_element("chara", chara_lora, nega)
@@ -429,21 +511,21 @@ class PromptMakerTW(PromptMaker):
         ビット演算ってのは、数字をビット単位で見て、特定のビットが立っているかどうかをチェックする方法だ。
         たとえば、'射精箇所'がビットで示されていて、各ビットが特定の射精箇所を表しているんだ。
         """
-        efc = self.get_csvname("effect")
+        efc = "Effect.csv"
         #;TFLAG:1 射精箇所 (ビット0=コンドーム 1=膣内 2=アナル 3=手淫 4=口淫 5=パイズリ 6=素股 7=足コキ 8=体表 9=アナル奉仕
         #なにこれ? → 20=手淫フェラ 21=パイズリフェラ22=シックスナイン 24=子宮口 25=疑似 26=授乳プレイ
 
         # チェックするビット位置のリスト
         ejaculation_places = {
-                1: "(cum in pussy,internal ejaculation)",
-                2: "(cum in ass)",
-                4: "(cum on hand, ejaculation, projectile cum)",
-                8: "(cum in mouth)",
-                16: "(cum on breasts, ejaculation, projectile cum)",
-                32: "(cum on lower body, ejaculation, projectile cum)",
-                64: "(cum on feet, ejaculation, projectile cum)",
-                128: "(cum on stomach, ejaculation, projectile cum)",
-                256: "(ejaculation, projectile cum)"
+                2: "(cum in pussy,internal ejaculation)",
+                4: "(cum in ass)",
+                8: "(cum on hand, ejaculation, projectile cum)",
+                16: "(cum in mouth)",
+                32: "(cum on breasts, ejaculation, projectile cum)",
+                64: "(cum on lower body, ejaculation, projectile cum)",
+                128: "(cum on feet, ejaculation, projectile cum)",
+                256: "(cum on stomach, ejaculation, projectile cum)",
+                512: "(ejaculation, projectile cum)"
             }
         for bit, description in ejaculation_places.items():
             if self.cump & bit != 0:
@@ -486,7 +568,7 @@ class PromptMakerTW(PromptMaker):
         """
         #TRAIN限定のエフェクト
         # エフェクト等
-        efc = self.get_csvname("effect")
+        efc = "Effect.csv"
         # 破瓜の血
         if self.lostv > 0:
             prompt = csvm.get_df(efc,"名称","処女喪失","プロンプト")
@@ -511,14 +593,24 @@ class PromptMakerTW(PromptMaker):
         たとえば、キャラクターが妊娠している場合、妊娠の進行度に応じて異なるプロンプトを追加するんだ。
         これによって、シナリオのリアリティがさらに高まるぜ！
         """
-        efc = self.get_csvname("effect")
-        if "妊娠" in self.sjh.get_save("talent"):
+        efc = "Effect.csv"
+        if "妊娠" in self.talent:
             # 標準で20日で出産する。残14日から描写し、残8日でさらに進行
             if (self.birth - self.days) in range(8,14):
                 prompt = csvm.get_df(efc,"名称","妊娠中期","プロンプト")
             elif (self.birth - self.days) <= 8:
                 prompt = csvm.get_df(efc,"名称","妊娠後期","プロンプト")
-                self.add_element("effect", prompt, None)
+            self.add_element("effect", prompt, None)
+        
+        if self.sjh.get_save("時間停止") != 0:
+            prompt = csvm.get_df(efc,"名称","時間停止","プロンプト")
+            nega = csvm.get_df(efc,"名称","時間停止","ネガティブ")
+            self.add_element("effect", prompt, nega)
+
+        if self.sjh.get_save("睡眠") != 0:
+            prompt = csvm.get_df(efc,"名称","睡眠中","プロンプト")
+            nega = csvm.get_df(efc,"名称","睡眠中","ネガティブ")
+            self.add_element("effect", prompt, nega)
 
 
     def create_body_element(self):
@@ -531,31 +623,31 @@ class PromptMakerTW(PromptMaker):
 
         このメソッドを使えば、キャラクターの体の特徴を効果的に表現できるぜ！
         """
-        tal = self.get_csvname("talent")
+        tal = "Talent.csv"
 
         # 乳サイズ
         if self.flags["drawbreasts"]:
             talents = ["絶壁","貧乳","巨乳","爆乳"]
-            for tal in talents:
-                if tal in self.talent:
-                    prompt = csvm.get_df(tal,"名称",tal,"プロンプト")
-                    nega = csvm.get_df(tal,"名称",tal,"ネガティブ")
+            for tals in talents:
+                if tals in self.talent:
+                    prompt = csvm.get_df(tal,"名称",tals,"プロンプト") + ","
+                    nega = csvm.get_df(tal,"名称",tals,"ネガティブ",error_return="") + ","
                     self.add_element("body", prompt, nega)
         else:
             talents = ["絶壁","貧乳","巨乳","爆乳"]
-            for tal in talents:
-                if tal in self.talent:
-                    prompt = csvm.get_df(tal,"名称",tal,"プロンプト")
-                    nega = csvm.get_df(tal,"名称",tal,"ネガティブ")
-                    nega += "areolae, nipple" #negaが空白だった時用対策 #あとで nega空白ならERROR
+            for tals in talents:
+                if tals in self.talent:
+                    prompt = csvm.get_df(tal,"名称",tals,"プロンプト") + ","
+                    nega = csvm.get_df(tal,"名称",tals,"ネガティブ",error_return="") + ","
+                    nega += ",areolae, nipple" #negaが空白だった時用対策 #あとで nega空白ならERROR
                     self.add_element("body", prompt, nega)
 
         # 体格、体型
         talents = ["小人体型","巨躯","小柄体型","ぽっちゃり","ムチムチ","スレンダー","がりがり"]
-        for tal in talents:
-            if tal in self.talent:
-                prompt = csvm.get_df(tal,"名称",tal,"プロンプト")
-                nega = csvm.get_df(tal,"名称",tal,"ネガティブ")
+        for tals in talents:
+            if tals in self.talent:
+                prompt = csvm.get_df(tal,"名称",tals,"プロンプト") + ","
+                nega = csvm.get_df(tal,"名称",tals,"ネガティブ",error_return="") + ","
                 self.add_element("body", prompt, nega)
 
         # 胸愛撫など、普通乳なのに巨乳に描かれがちなコマンドのときプロンプトにsmall breastsを付加する
@@ -563,8 +655,7 @@ class PromptMakerTW(PromptMaker):
         and_list = set(self.talent) & set(chk_list)
         # リストに一致しないとき即ち普通乳のとき
         if (len(and_list)) == 0:
-            # 胸愛撫、ぱふぱふ、後背位胸愛撫
-            if self.comno in ("6","606","702"):
+            if self.com in ("胸愛撫","胸揉み","パイズリ","着衣胸愛撫","着衣胸揉み"):
                 self.add_element("body", "small breasts", None)
 
 
@@ -576,7 +667,7 @@ class PromptMakerTW(PromptMaker):
         長髪、セミロング、ショートカット、ツインテールなど、さまざまな髪型を考慮に入れる。
         髪型はキャラクターの個性を表現するのに重要な要素だから、しっかりと反映させるんだ。
         """
-        tal = self.get_csvname("talent")
+        tal = "Talent.csv"
         talents = ["長髪","セミロング","ショートカット","ポニーテール","ツインテール",\
                    "サイドテール","縦ロール","ツインリング","三つ編み","短髪","おさげ髪",\
                    "ポンパドール","ポニーアップ","サイドダウン","お団子髪","ツーサイドアップ",\
@@ -600,16 +691,16 @@ class PromptMakerTW(PromptMaker):
         """
         # TRAINとその他のEVENTで読み取るcsvが異なる
         if self.scene == "TRAIN":
-            tra = self.get_csvname("train")
+            tra = "Train.csv"
             kaizoudo = csvm.get_df(tra,"コマンド名",self.com,"解像度")
         #これ用のプロンプトや解像度はあとでCSVにかく
         elif self.scene == "マスター移動" or self.scene == "ターゲット切替":
             return
 
         else:
-            eve = self.get_csvname("event")
+            eve = "Event.csv"
             kaizoudo = csvm.get_df(eve,"名称",self.scene,"解像度")
-            self.width, self.height = get_width_and_height(kaizoudo)
+        self.width, self.height = get_width_and_height(kaizoudo)
 
 
     # 服装
@@ -622,7 +713,7 @@ class PromptMakerTW(PromptMaker):
 
         注意：このメソッドはまだ未完成だ。いつか完成させるぜ！
         """
-        clo = self.get_csvname("cloth")
+        clo = "Cloth.csv"
 
         #グラグの処理はクラスにまとめる
         cf = ClothFlags(self.sjh)
@@ -703,6 +794,174 @@ class PromptMakerTW(PromptMaker):
             or (self.sjh.get_save("コマンド") == "1"):
             if self.sjh.get_save("下半身下着2") != 0:
                 self.add_element("cloth", "(pantie aside)", None)
+
+    def create_clothing_element_simplified(self):
+        # 一時しのぎのジェネリック衣服描画システム
+        # 着ている衣服を個別に参照しない。（下着だけ参照する。）
+        # 【上着脱衣済み】フラグを利用し、着衣・下着姿・はだか の区別だけをする
+
+        cha = "Character.csv"
+        clo = "Cloth.csv"
+        efe = "Effect.csv"
+        prompt = ""
+        negative = ""
+        
+        # 帽子　とりあえず無条件で描画
+        # csvに記入がないときは "" が返ってくるように第5引数を指定
+        prompt += csvm.get_df(cha,"キャラ名",self.name,"デフォルト帽子",error_return="") + ","
+
+        # 服着てるならデフォルト衣装を描画
+        if self.undress == 0 and self.fullnude == 0:
+            prompt += csvm.get_df(cha,"キャラ名",self.name,"デフォルト上衣",error_return="") + ","
+            # ボトムスがフレームアウトする構図を考慮
+            if self.flags["drawbottoms"] != 0:
+                prompt += csvm.get_df(cha,"キャラ名",self.name,"デフォルト下衣",error_return="") + ","
+        else:
+            print(self.undress)
+            #上着なしなら下着描画の可能性がある
+            if self.braname != "":                    
+                negative += "nipples,"
+                if not self.uniquepanty:
+                    #ふつうの下着（固有下着以外）
+                    prompt += csvm.get_df(clo,"衣類名", self.braname,"プロンプト") + ","
+                else:
+                    #固有下着の場合
+                    prompt += csvm.get_df("Uniquecloth.csv","キャラ名", self.name,"上半身下着プロンプト") + ","
+                    negative += csvm.get_df("Uniquecloth.csv","キャラ名", self.name,"上半身下着ネガティブ") + ","
+
+            if self.pantyname != "ノーパン":
+                if not self.uniquepanty:
+                    #ふつうのパンツ（固有パンツ以外）
+                    prompt += csvm.get_df(clo,"衣類名", self.pantyname,"プロンプト") + ","
+                else:
+                    #固有パンツの場合
+                    prompt += csvm.get_df("Uniquecloth.csv","キャラ名", self.name,"下半身下着プロンプト") + ","
+                    negative += csvm.get_df("Uniquecloth.csv","キャラ名", self.name,"下半身下着ネガティブ") + ","
+    
+            #下着姿の共通プロンプト
+            prompt += csvm.get_df(efe,"名称", "上着脱衣済み","プロンプト") + ","
+            negative += csvm.get_df(efe,"名称", "上着脱衣済み","ネガティブ",error_return="") + ","
+            #ここから露出部分に応じたプロンプト
+            if self.braname != "":
+                if self.pantyname != "ノーパン":
+                    #ブラ〇パンツ〇
+                    prompt += csvm.get_df(efe,"名称", "ブラ〇パンツ〇","プロンプト") + ","
+                    negative += csvm.get_df(efe,"名称", "ブラ〇パンツ〇","ネガティブ",error_return="") + ","
+                else:
+                    #ブラ〇パンツ×
+                    prompt += csvm.get_df(efe,"名称", "ブラ〇パンツ×","プロンプト") + ","
+                    negative += csvm.get_df(efe,"名称", "ブラ〇パンツ×","ネガティブ",error_return="") + ","
+            else:
+                if self.pantyname != "ノーパン":
+                    #ブラ×パンツ〇
+                    prompt += csvm.get_df(efe,"名称", "ブラ×パンツ〇","プロンプト") + ","
+                    negative += csvm.get_df(efe,"名称", "ブラ×パンツ〇","ネガティブ",error_return="") + ","
+                else:
+                    #ブラ×パンツ×
+                    prompt += csvm.get_df(efe,"名称", "ブラ×パンツ×","プロンプト") + ","
+                    negative += csvm.get_df(efe,"名称", "ブラ×パンツ×","ネガティブ",error_return="") + ","
+
+        self.add_element("cloth", prompt, negative)
+
+
+    # パンツの柄描画
+    def create_panty_element(self):
+        if not self.uniquepanty:
+            #ふつうのパンツ（固有パンツ以外）
+            prompt = csvm.get_df("Cloth.csv","衣類名", self.pantyname,"プロンプト")
+            nega = csvm.get_df("Cloth.csv","衣類名", self.pantyname,"ネガティブ")
+            self.add_element("cloth", prompt, nega)
+        else:
+            #固有パンツの場合
+            prompt = csvm.get_df("Uniquecloth.csv","キャラ名", self.name,"下半身下着プロンプト")
+            nega = csvm.get_df("Uniquecloth.csv","キャラ名", self.name,"下半身下着ネガティブ")
+            self.add_element("cloth", prompt, nega)
+
+
+    #自由行動や仕事の描写 (移動後やキャラ選択時の立ち絵で描写するほか、片手間でできそうなコマンド（会話など）でも呼ぶ)
+    def create_activity_element(self):
+        if self.activityduration > 0:
+            #自由行動中
+            #Trainに書く。自由行動_0～自由行動_18
+            activity = "自由行動_" + str(self.activitytype)
+            tra = "Train.csv"
+            prompt = csvm.get_df(tra,"コマンド名",activity,"プロンプト")
+            negative = csvm.get_df(tra,"コマンド名",activity,"ネガティブ")
+            self.flags["drawchara"] =  bool(csvm.get_df(tra,"コマンド名",activity,"キャラ描画"))
+            self.flags["drawface"] =  bool(csvm.get_df(tra,"コマンド名",activity,"顔描画"))
+            self.flags["drawbreasts"] =  bool(csvm.get_df(tra,"コマンド名",activity,"胸描画"))
+            self.flags["drawvagina"] = bool(csvm.get_df(tra,"コマンド名",activity,"ヴァギナ描画"))
+            self.flags["drawanus"] = bool(csvm.get_df(tra,"コマンド名",activity,"アナル描画"))
+            self.flags["drawbottoms"] = bool(csvm.get_df(tra,"コマンド名",self.com,"下衣描画"))
+            self.flags["drawlocation"] = bool(csvm.get_df(tra,"コマンド名",activity,"背景描画"))
+            self.add_element("activity", prompt, negative)
+        elif self.working == 1:
+            #仕事中
+            #Trainに書く。
+            if self.jobname == "仕事":
+                #固有仕事名がないときは職種の数値で参照
+                job = "仕事_" + str(self.jobno)
+            else:
+                #固有仕事名
+                job = "仕事_" + str(self.jobname)
+            tra = "Train.csv"
+            prompt = csvm.get_df(tra,"コマンド名",job,"プロンプト")
+            negative = csvm.get_df(tra,"コマンド名",job,"ネガティブ")
+            self.flags["drawchara"] =  bool(csvm.get_df(tra,"コマンド名",job,"キャラ描画"))
+            self.flags["drawface"] =  bool(csvm.get_df(tra,"コマンド名",job,"顔描画"))
+            self.flags["drawbreasts"] =  bool(csvm.get_df(tra,"コマンド名",job,"胸描画"))
+            self.flags["drawvagina"] = bool(csvm.get_df(tra,"コマンド名",job,"ヴァギナ描画"))
+            self.flags["drawanus"] = bool(csvm.get_df(tra,"コマンド名",job,"アナル描画"))
+            self.flags["drawbottoms"] = bool(csvm.get_df(tra,"コマンド名",job,"下衣描画"))
+            self.flags["drawlocation"] = bool(csvm.get_df(tra,"コマンド名",job,"背景描画"))
+            self.add_element("activity", prompt, negative)
+
+
+    #入手アイテムや作成した料理
+    def create_item_element(self,group):
+        if group == "料理を作る":
+            prompt = csvm.get_df("Dish.csv","名称", self.dish,"プロンプト")
+            nega = csvm.get_df("Dish.csv","名称", self.dish,"ネガティブ")
+            self.add_element("item", prompt, nega)
+        if group == "食事を取る":
+            prompt = csvm.get_df("Dish.csv","名称", self.dish,"プロンプト")
+            nega = csvm.get_df("Dish.csv","名称", self.dish,"ネガティブ")
+            self.add_element("item", prompt, nega)
+
+        if group == "採集する":
+            if self.succ > 0:#失敗ならスキップ
+                #同伴キャラの有無で分岐
+                #採取コマンドではTFLAG:193の数値で入手アイテム番号がわかる。成否判定と同じ変数を使っている。
+                getitem = self.succ
+                if self.charno == 0:
+                    prompt = csvm.get_df("Item.csv","ID", getitem,"プロンプト")
+                    prompt += " on the ground,close-up,simplified illustration,clip art"
+                    nega = "hand,finger"
+                else:
+                    #アイテム入手　はしゃぐ女の子のランダム3パターン
+                    selector = random.randint(1,3)
+                    if selector == 1:
+                        prompt = "(1girl holding "
+                        prompt += csvm.get_df("Item.csv","ID", getitem,"プロンプト")
+                        prompt += " out to viewer:1.4),"
+                    elif selector == 2:
+                        prompt = "(squatting:0.8),(1girl found "
+                        prompt += csvm.get_df("Item.csv","ID", getitem,"プロンプト")
+                        prompt += " on the ground:1.4),"
+                    else:
+                        prompt = "(leaning forward :0.8),(1girl picked up "
+                        prompt += csvm.get_df("Item.csv","ID", getitem,"プロンプト")
+                        prompt += " from the ground:1.4),"
+
+                    prompt += "innocent smile,open mouth,"#表情筋が未実装なので、かわいいリアクションをつけておく
+                    nega = "(eating:1.3)"
+
+                    if getitem == 636:#ふん
+                        prompt = ""
+
+
+                self.add_element("item", prompt, nega)
+
 
 
     def prompt_debug(self):

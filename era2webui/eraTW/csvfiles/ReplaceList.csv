@@ -20,3 +20,13 @@
 正方形,512x512,解像度欄も置換対象とする。
 縦長,512x640,
 横長,640x512,
+,,
+,,
+和室,tatami,
+土間,"inside of small barn,edo era,plaster wall,Paved sand,(cobble:0.7)",土間は無理
+土間の台所,"antiqued kitchen, antiqued interior",土間はあきらめたキッチン
+木造の小部屋,"simple wooden floor,simple wooden wall, wood grain,Cramped shed,(simple background:0.8)",
+洋室,interior of western-style house,
+昔の風呂,antiquity bath,ノーアイディア
+昔のトイレ,antiquity toilet,
+洗面脱衣室,"antique sink,japanese sink room, wooden floor",

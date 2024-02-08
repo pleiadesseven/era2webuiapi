@@ -5,19 +5,40 @@ import sys
 import time
 from tkinter import filedialog
 
+from module.settings import Settings
+# バリアントの選択と設定
+#PromptMakerとCSVMFactoryはこれの変数使うからそれより前に呼ぶ
+#あとで直すなんか美しくない
+Settings.select_variant()
+
 import requests
-#from eratohoYM.suberatohoYM import promptmaker  # YMの場合こちらをインポートする
-#from eraTW.suberaTW import promptmaker #TWの場合こちらをインポートする
-from eraTW.suberaTW import PromptMaker
-#from eraImascgpro.subcgpro import promptmaker
 from module.api import gen_image_api
 from module.savedata_handler import SJHFactory
 from module.csv_manager import CSVMFactory
-from module.csv_manager import search_imported_variant
 from module.sub import gen_Image
 from selenium import webdriver
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers.polling import PollingObserver
+
+
+
+class PromptMakerFactory:
+    """class Setings にあるバリアントに従ってPromptMakerのインスタンスを作る
+    Returns:
+        _type_: _description_
+    """
+    @staticmethod
+    def create_prompt_maker(sjhandler):
+        variant = Settings.variant
+        if variant == 'eratohoYM':
+            from eratohoYM.suberatohoYM import PromptMakerYM
+            return PromptMakerYM(sjhandler)
+        elif variant == 'eraTW':
+            from eraTW.suberaTW import PromptMakerTW
+            return PromptMakerTW(sjhandler)
+        elif variant == 'eraImascgpro':
+            from eraImascgpro.subcgpro import PromptMakerImascgpro
+            return PromptMakerImascgpro(sjhandler)
 
 class FileHandler(FileSystemEventHandler):
     """受け取る引数 order_queue は list
@@ -79,8 +100,8 @@ def TaskExecutor(order_queue,driver):
             print("txtを読み込み シーン:" + json_data["scene"]) #読み込みチェック　シーンを書き出す
             print("キャラ名:" + json_data["target"]) #キャラ名を書き出す
 
-            # プロンプト整形 SaveJSONHandlerのメソッドを使うため  インスタンスそのもの  をわたす
-            promptmaker = PromptMaker(sjhandler)
+            # プロンプト整形 SaveJSONHandlerのメソッドを使うため  インスタンスそのもの  をわたす 依存性注入とかいうらしい
+            promptmaker = PromptMakerFactory.create_prompt_maker(sjhandler)
             prompt,negative,gen_width,gen_height = promptmaker.generate_prompt()
 
             # add_prompt.txtの内容をpromptに追記する
@@ -106,7 +127,11 @@ def TaskExecutor(order_queue,driver):
             while True:
                 #driverを取得できない場合gen_image_apiで生成する
                 if driver is None:
-                    status_code = asyncio.run(gen_image_api(prompt, negative, gen_width, gen_height))
+                    stream = config_ini.get('Generater', 'StreamDiffusionで生成する', fallback='0') == '1'
+                    if stream == 1:
+                        status_code = image_generator.generate_image(prompt)
+                    else:
+                        status_code = asyncio.run(gen_image_api(prompt, negative, gen_width, gen_height))
                     if status_code == 200:
                         time.sleep(0.1)
                         break #待機ゲージはapi.pyで処理する
@@ -164,6 +189,10 @@ if __name__ == '__main__':
         config_ini.set('Generater', 'add_prompt機能', "1")
     if not 'apiモードで起動する' in config_ini['Generater']:
         config_ini.set('Generater', 'apiモードで起動する', "0")
+    if not 'StreamDiffusionで生成する' in config_ini['Generater']:
+        config_ini.set('Generater', 'StreamDiffusionで生成する', "0")
+    if not 'StreamDiffusionで生成する' in config_ini['Generater']:
+        config_ini.set('Generater', 'StreamDiffusionで生成する', "0")
 
     # ダイアログで監視対象フォルダを選ばせる。
     # ダイアログ表示はconfigファイルでスキップ設定可能
@@ -192,8 +221,8 @@ if __name__ == '__main__':
     if skip_csv and os.path.isdir(csv_dir):
         csv_target_dir = csv_dir
     else:
-        #search_imported_variantでインポートされてるCSVから監視するPathを作成
-        csv_target_dir = os.path.join(os.path.dirname(__file__), search_imported_variant(), 'csvfiles')
+        #Settings.variantで設定されたバリアントから監視するcsvフォルダのPathを作成
+        csv_target_dir = os.path.join(os.path.dirname(__file__), Settings.variant, 'csvfiles')
     # iniにCSVパスを記入
     config_ini.set("Paths", "eracsv", csv_target_dir)
     with open(inipath, "w", encoding='UTF-8') as configfile:
@@ -216,6 +245,8 @@ if __name__ == '__main__':
     add_prompt機能 = int(config_ini.get("Generater", "add_prompt機能", fallback=0))
     # apiモードで起動する
     apiモードで起動する = int(config_ini.get("Generater", "apiモードで起動する", fallback=0))
+    # StreamDiffusionで生成する
+    StreamDiffusionで生成する = int(config_ini.get("Generater", "StreamDiffusionで生成する", fallback=0))
 
     # 画像ビューアの起動は手動にしました
 
@@ -247,11 +278,12 @@ if __name__ == '__main__':
                 return e
 
 
-    # APIモードで起動するかの設定をconfig.iniから取得
+    #StreamDiffusionモードかAPIモードで起動するかの設定をconfig.iniから取得
     api_mode = config_ini.get('Generater', 'apiモードで起動する', fallback='0') == '1'
+    stream_mode = config_ini.get('Generater', 'StreamDiffusionで生成する', fallback='0') == '1'
 
-    # iniでAPIモードの設定がある場合はブラウザのチェックを飛ばす
-    if not api_mode:
+    # iniでAPIモードかStreamDiffusionの設定がある場合はブラウザのチェックを飛ばす
+    if not api_mode and not stream_mode:
         print("Chromeへの接続を試行")
         driver = check_browser()
     else:
@@ -262,6 +294,11 @@ if __name__ == '__main__':
     if driver is not None:
         print("ブラウザモードで作動")
         print("取得したwebdriver:" + str(driver))
+    elif stream_mode:
+        print("StreamDiffusionモードで作動")
+        #モデル読み込みで時間がかかるのでStreamのときはここでインスタンスを用意する
+        from module.generate_stream import ImageGenerator
+        image_generator = ImageGenerator.get_instance()
     else:
         print("APIの接続確認中")
         api_result = check_api()
@@ -288,9 +325,3 @@ if __name__ == '__main__':
     # タスクの実行
     task_executor = TaskExecutor(order_queue,driver)
     task_executor.run(driver)
-
-    # ファイル監視の停止
-    observer.stop()
-    observer.join()
-    print("強制終了でしか終わらない現状、ここが処理されることはない")
-    driver.quit()
