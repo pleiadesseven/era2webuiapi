@@ -236,8 +236,6 @@ class PromptMakerTW(PromptMaker):
             self.com = "自由行動に付き合う_"+ str(self.activitytype)
 
 
-
-
     def create_situation_element(self):
         """
         このcreate_situation_elementメソッドは、現在のシナリオに合わせて状況のプロンプトを生成するんだ。
@@ -674,30 +672,6 @@ class PromptMakerTW(PromptMaker):
                 self.add_element("hair", prompt, nega)
 
 
-    # 解像度をcsvから読む
-    def get_kaizoudo(self):
-        """
-        あとでアスペクト比を基に可変できるようにする
-        このget_kaizoudoメソッドは、シーンに応じて解像度をCSVファイルから読み込むために使うんだ。
-        TRAINシーンとその他のEVENTシーンで読み取るCSVが異なるから、条件分岐を使って適切なCSVを選択するぜ。
-
-        TRAINシーンの場合はTrain.csvから、その他の場合はEvent.csvから解像度を取得するんだ。
-        解像度は、画像生成における品質を決定する重要な要素だから、正確に取得することが大事だぜ！
-        """
-        # TRAINとその他のEVENTで読み取るcsvが異なる
-        if self.scene == "TRAIN":
-            tra = "Train.csv"
-            kaizoudo = csvm.get_df(tra,"コマンド名",self.com,"解像度")
-        #これ用のプロンプトや解像度はあとでCSVにかく
-        elif self.scene == "マスター移動" or self.scene == "ターゲット切替":
-            return
-
-        else:
-            eve = "Event.csv"
-            kaizoudo = csvm.get_df(eve,"名称",self.scene,"解像度")
-        self.width, self.height = get_width_and_height(kaizoudo)
-
-
     # 服装
     def create_clothing_element(self):
         """
@@ -787,6 +761,7 @@ class PromptMakerTW(PromptMaker):
         if self.flags["マスターがV挿入"] or self.flags["マスターがA挿入"] or self.comno == 1:
             if self.下半身下着2 != 0:
                 self.add_element("cloth", "(pantie aside)", None)
+
 
     def create_clothing_element_simplified(self):
         # 一時しのぎのジェネリック衣服描画システム
