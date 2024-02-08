@@ -69,75 +69,114 @@ def get_equip_position(display_part):
 
 
 class ClothFlags():
+    """衣装に関するフラグを管理するクラス
+    #TODO:Saveを全部調べてフラグを立てる挙動は無駄が多そうなので、show_clothで一度調べたものを使いまわすようにするほうがいいかもしれない
+    """
     def __init__(self, sjh):
         self.sjh = sjh
 
     def nobura(self):
-        return (
-            self.sjh.get_save('キャラ固有番号') != 0 \
-            and not self.sjh.get_save("性別") ==2 \
-            and self.sjh.get_save("上半身下着2") == 0 \
-            and self.sjh.get_save("上半身下着1") == 0 \
-            and self.sjh.get_save("ボディースーツ") == 0 \
-            and self.sjh.get_save("レオタード") == 0
-        )
+            """ノーブラ判定
+            Returns: bool: True if the character is not wearing any underwear, False otherwise.
+            """
+            return (
+                self.sjh.get_save('キャラ固有番号') != 0 \
+                and not self.sjh.get_save("性別") ==2 \
+                and self.sjh.get_save("上半身下着2") == 0 \
+                and self.sjh.get_save("上半身下着1") == 0 \
+                and self.sjh.get_save("ボディースーツ") == 0 \
+                and self.sjh.get_save("レオタード") == 0
+            )
 
 
     def nopan(self):
-        return (
-            self.sjh.get_save('キャラ固有番号') != 0 \
-            and self.sjh.get_save("下半身下着2") == 0 \
-            and self.sjh.get_save("下半身下着1") == 0 \
-            and self.sjh.get_save("ボディースーツ") == 0 \
-            and self.sjh.get_save("レオタード") == 0
-        )
+            """ノーパン判定
+            Returns: bool: True if the character is not wearing any pants, False otherwise.
+            """
+            return (
+                self.sjh.get_save('キャラ固有番号') != 0 \
+                and self.sjh.get_save("下半身下着2") == 0 \
+                and self.sjh.get_save("下半身下着1") == 0 \
+                and self.sjh.get_save("ボディースーツ") == 0 \
+                and self.sjh.get_save("レオタード") == 0
+            )
 
     def upperbody_layers(self):
+        """上半身重ね着枚数
+        キャラクターが着用している上半身のレイヤー(重ね着)の数を返します。
+        Returns:int: The number of upper body layers.
+        """
         items = ["上半身上着1", "上半身上着2", "ボディースーツ", "ワンピース", "着物", "レオタード"]
         return sum(self.sjh.get_save(item) != 0 for item in items)
 
     def lowerbody_layers(self):
+        """下半身重ね着枚数
+        キャラクターが着用している下半身のレイヤー(重ね着)の数を返します。
+        Returns:int: The number of upper body layers.
+        """
         items = ["下半身上着1", "下半身上着2", "スカート", "ボディースーツ", "ワンピース", "着物", "レオタード"]
         return sum(self.sjh.get_save(item) != 0 for item in items)
 
     def bra_exposed(self):
+        """ブラ見えるか判定
+        Returns:
+            bool: Trueで上裸かブラチラ、Falseでブラが見えない
+        """
         if self.upperbody_layers() == 0\
             or (self.upperbody_layers() == 1\
             and self.sjh.get_save("上半身着衣状況") == 0):
-            return 1
+            return True
         elif self.sjh.get_save("上半身はだけ状態") == 1:
-            return 1
-        return 0
+            return True
+        return False
 
     def psnts_exposed(self):
+        """パンツ見えるか判定
+        Returns:
+            bool:
+        """
         if self.lowerbody_layers() == 0\
             or (self.lowerbody_layers() == 1\
             and self.sjh.get_save("下半身着衣状況") == 0):
-            return 1
+            return True
         elif self.sjh.get_save("下半身ずらし状態")  == 1:
-            return 1
-        return 0
+            return True
+        return False
 
     def nipps_exposed(self):
+        """乳首見えるか判定
+        Returns:
+            bool:
+        """
         # 着てない or ブラのみの状態から脱ぐ、または元々ノーブラの状態でブラが見える条件を満たす
         if self.sjh.get_save("上半身着衣状況") == 0\
             or (self.upperbody_layers() == 0\
             and self.sjh.get_save("上半身着衣状況") == 0)\
             or (self.sjh.get_save("上半身下着2") == 0\
             and self.bra_exposed() == 1):
-            return 1
-        return 0
+            return True
+        return False
 
     def pussy_exposed(self):
     # なにも履いてない or パンツだけ履いてるのを脱ぐ、または元々ノーパンの状態でパンツが見える条件を満たす
         if self.sjh.get_save("下半身着衣状況") == 0\
             or (self.lowerbody_layers() == 0 and self.sjh.get_save("上半身着衣状況") == 0)\
             or (self.sjh.get_save("下半身下着2") == 0 and self.psnts_exposed() == 1):
-            return 1
-        return 0
+            return True
+        return False
 
 
 def show_cloth(save):
+    """現在の装備を表示する
+    printはデバッグ用
+
+    Args:
+        save (インスタンス): SJHのインスタンス
+
+    Returns:
+        Dict : 装備部位と装備名の辞書
+        装備部位と表示部位とか何だこれ!?って思ってる
+    """
     clothing_info = {}
     # 特定の装備部位の衣装名を取得
     for i in range(1, 23):
@@ -150,15 +189,14 @@ def show_cloth(save):
         if not save.get_save("EQUIP:NO:装備部位").get(i):
             continue
 
-        #パジャマの処理はあとで考える
+        #TODO:パジャマの処理はあとで考える
 
         if display_part == "下半身下着2":
-            #下着の名前は辞書で与えられるのでその最初の辞書のvalueを使う
-            _, pantus = next(iter(save.get_save("lower_underwear").items()))
+            pantus = save.get_save("パンツ名称")
             print(f"{pantus}")
 
         if display_part == "上半身下着1":
-            _, bura = next(iter(save.get_save("upper_underwear").items()))
+            bura = save.get_save("ブラ名称")
             print(f"{bura}")
 
         # 特定の条件に基づく表示内容の決定
